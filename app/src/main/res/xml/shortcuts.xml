@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="show_overlay"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_media_play"
+        android:shortcutShortLabel="@string/show_overlay_short"
+        android:shortcutLongLabel="@string/show_overlay_long">
+        <intent
+            android:action="io.github.legandy.volumemanager.action.SHOW_OVERLAY"
+            android:targetPackage="io.github.legandy.volumemanager"
+            android:targetClass="io.github.legandy.volumemanager.ActionReceiver" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="hide_overlay"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_media_pause"
+        android:shortcutShortLabel="@string/hide_overlay_short"
+        android:shortcutLongLabel="@string/hide_overlay_long">
+        <intent
+            android:action="io.github.legandy.volumemanager.action.HIDE_OVERLAY"
+            android:targetPackage="io.github.legandy.volumemanager"
+            android:targetClass="io.github.legandy.volumemanager.ActionReceiver" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="toggle_overlay"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_rotate"
+        android:shortcutShortLabel="@string/toggle_overlay_short"
+        android:shortcutLongLabel="@string/toggle_overlay_long">
+        <intent
+            android:action="io.github.legandy.volumemanager.action.TOGGLE_OVERLAY"
+            android:targetPackage="io.github.legandy.volumemanager"
+            android:targetClass="io.github.legandy.volumemanager.ActionReceiver" />
+    </shortcut>
+</shortcuts>
