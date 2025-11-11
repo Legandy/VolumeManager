@@ -64,15 +64,11 @@ class MainActivity : ComponentActivity() {
         val lifecycleOwner = LocalLifecycleOwner.current
 
         fun checkBluetoothPermission(): Boolean {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
-            } else {
-                true // Permission not needed before Android 12
-            }
+            return ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
         }
 
         fun checkNotificationAccess(): Boolean {
-            return (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).isNotificationPolicyAccessGranted
+            return (context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager).isNotificationPolicyAccessGranted
         }
 
         var isAccessibilityEnabled by remember { mutableStateOf(
@@ -130,9 +126,7 @@ class MainActivity : ComponentActivity() {
                     onOpenAccessibilityClick = { openAccessibilitySettings() },
                     onOpenNotificationAccessClick = { openNotificationAccessSettings() },
                     onGrantBluetoothClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
-                        }
+                        bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
                     },
                     onRefresh = { checkCounter++ }
                 )
@@ -219,7 +213,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 // New Button for Bluetooth
-                if (!hasBluetooth && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (!hasBluetooth) {
                     Button(onClick = onGrantBluetoothClick, modifier = Modifier.fillMaxWidth()) {
                         Text("4. Grant Bluetooth Permission")
                     }
