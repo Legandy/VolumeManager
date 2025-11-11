@@ -1,4 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Volume Manager</string>
-    <string name="accessibility_service_description">Keep volume manager running in background, and provide quick access to it via accessibility button or physical volume button.</string>
+
+    <string name="show_overlay_short">Show Overlay</string>
+    <string name="show_overlay_long">Show Volume Overlay</string>
+    <string name="hide_overlay_short">Hide Overlay</string>
+    <string name="hide_overlay_long">Hide Volume Overlay</string>
+    <string name="toggle_overlay_short">Toggle Overlay</string>
+    <string name="toggle_overlay_long">Toggle Volume Overlay</string>
+    <string name="shortcut_disabled">Shortcut is disabled</string>
+    <string name="enable_accessibility_message">Please enable the Accessibility setting to allow the overlay.</string>
+    <string name="accessibility_service_description">Volume overlay service to control per-app audio</string>
+    <string name="unknown_action">Unknown shortcut action.</string>
+    <string name="create_shortcut_label">Volume Control Shortcut</string>
+
 </resources>

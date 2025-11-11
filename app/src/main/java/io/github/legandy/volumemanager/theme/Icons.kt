@@ -1,4 +1,4 @@
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.ui.theme
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
