@@ -1,6 +1,5 @@
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.actions
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,7 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
@@ -19,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import io.github.legandy.volumemanager.R
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 
 class ShortcutActivity : ComponentActivity() {
@@ -37,7 +37,7 @@ class ShortcutActivity : ComponentActivity() {
         val shortcuts = listOf(
             ShortcutInfo("Show Overlay", ACTION_SHOW_OVERLAY, Icons.Default.PlayArrow),
             ShortcutInfo("Hide Overlay", ACTION_HIDE_OVERLAY, Icons.Default.Stop),
-            ShortcutInfo("Toggle Overlay", ACTION_TOGGLE_OVERLAY, Icons.Default.ArrowForward)
+            ShortcutInfo("Toggle Overlay", ACTION_TOGGLE_OVERLAY, Icons.AutoMirrored.Filled.ArrowForward)
         )
 
         Surface {
@@ -86,10 +86,9 @@ class ShortcutActivity : ComponentActivity() {
             Intent.ShortcutIconResource.fromContext(this, R.mipmap.ic_launcher)
         )
 
-        setResult(Activity.RESULT_OK, resultIntent)
+        setResult(RESULT_OK, resultIntent)
         finish()
     }
 
     private data class ShortcutInfo(val label: String, val action: String, val icon: ImageVector)
 }
-

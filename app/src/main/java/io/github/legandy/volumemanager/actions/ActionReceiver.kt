@@ -1,10 +1,11 @@
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.actions
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
+import io.github.legandy.volumemanager.overlay.OverlayService
 
 class ActionReceiver : BroadcastReceiver() {
     companion object {

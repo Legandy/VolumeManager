@@ -1,4 +1,4 @@
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.core
 
 import android.annotation.SuppressLint
 import android.app.Activity

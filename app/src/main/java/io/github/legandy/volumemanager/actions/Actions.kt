@@ -1,4 +1,4 @@
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.actions
 
 /**
  * Defines the constant intent actions used throughout the application.

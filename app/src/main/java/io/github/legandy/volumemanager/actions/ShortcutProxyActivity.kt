@@ -1,9 +1,10 @@
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.actions
 
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import io.github.legandy.volumemanager.overlay.OverlayService
 
 class ShortcutProxyActivity : Activity() {
     companion object {
@@ -31,4 +32,3 @@ class ShortcutProxyActivity : Activity() {
         finish()
     }
 }
-

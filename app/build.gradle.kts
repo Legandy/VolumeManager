@@ -66,7 +66,6 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.joor)
     implementation(libs.hiddenapibypass)
-    implementation("androidx.cardview:cardview:1.0.0")
 
 
     // AndroidX & lifecycle

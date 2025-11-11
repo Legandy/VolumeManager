@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.app
 
 import android.Manifest
 import android.app.NotificationManager
@@ -25,15 +25,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 import androidx.compose.ui.graphics.vector.ImageVector
+import io.github.legandy.volumemanager.core.Manager
+import io.github.legandy.volumemanager.overlay.OverlayService
+import io.github.legandy.volumemanager.settings.ui.SettingsScreen
+import io.github.legandy.volumemanager.utils.isAccessibilityServiceEnabled
 
 class MainActivity : ComponentActivity() {
 
@@ -72,7 +75,11 @@ class MainActivity : ComponentActivity() {
             return (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).isNotificationPolicyAccessGranted
         }
 
-        var isAccessibilityEnabled by remember { mutableStateOf(isAccessibilityServiceEnabled(context)) }
+        var isAccessibilityEnabled by remember { mutableStateOf(
+            isAccessibilityServiceEnabled(
+                context
+            )
+        ) }
         var hasNotificationAccess by remember { mutableStateOf(checkNotificationAccess()) }
         var hasBluetoothPermission by remember { mutableStateOf(checkBluetoothPermission()) }
         var checkCounter by remember { mutableIntStateOf(0) }
@@ -89,7 +96,10 @@ class MainActivity : ComponentActivity() {
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
-                    isAccessibilityEnabled = isAccessibilityServiceEnabled(context)
+                    isAccessibilityEnabled =
+                        isAccessibilityServiceEnabled(
+                            context
+                        )
                     hasNotificationAccess = checkNotificationAccess()
                     hasBluetoothPermission = checkBluetoothPermission()
                     checkCounter++
@@ -104,7 +114,11 @@ class MainActivity : ComponentActivity() {
 
         when {
             manager.shizukuReady && allPermissionsGranted -> {
-                SettingsScreen(MyApplication.settings, { finish() }, manager)
+                SettingsScreen(
+                    MyApplication.settings,
+                    { finish() },
+                    manager
+                )
             }
             manager.shizukuReady -> {
                 PermissionScreen(

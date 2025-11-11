@@ -12,7 +12,7 @@
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
     <application
-        android:name=".MyApplication"
+        android:name=".app.MyApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
@@ -23,7 +23,7 @@
         tools:targetApi="34">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".app.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.VolumeManager">
             <intent-filter>
@@ -33,7 +33,7 @@
         </activity>
 
         <activity
-            android:name=".ShortcutActivity"
+            android:name=".actions.ShortcutActivity"
             android:exported="true"
             android:label="@string/create_shortcut_label"
             android:theme="@style/Theme.VolumeManager.Dialog">
@@ -44,14 +44,14 @@
         </activity>
 
         <activity
-            android:name=".ShortcutProxyActivity"
+            android:name=".actions.ShortcutProxyActivity"
             android:exported="true"
             android:theme="@style/Theme.VolumeManager.Transparent"
             android:taskAffinity=""
             android:excludeFromRecents="true" />
 
         <service
-            android:name=".OverlayService"
+            android:name=".overlay.OverlayService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="true">
             <intent-filter>
@@ -63,7 +63,7 @@
         </service>
 
         <receiver
-            android:name=".ActionReceiver"
+            android:name=".actions.ActionReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="io.github.legandy.volumemanager.action.SHOW_OVERLAY" />

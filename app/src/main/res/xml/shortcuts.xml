@@ -9,7 +9,7 @@
         <intent
             android:action="io.github.legandy.volumemanager.action.SHOW_OVERLAY"
             android:targetPackage="io.github.legandy.volumemanager"
-            android:targetClass="io.github.legandy.volumemanager.ActionReceiver" />
+            android:targetClass="io.github.legandy.volumemanager.actions.ActionReceiver" />
     </shortcut>
 
     <shortcut
@@ -21,7 +21,7 @@
         <intent
             android:action="io.github.legandy.volumemanager.action.HIDE_OVERLAY"
             android:targetPackage="io.github.legandy.volumemanager"
-            android:targetClass="io.github.legandy.volumemanager.ActionReceiver" />
+            android:targetClass="io.github.legandy.volumemanager.actions.ActionReceiver" />
     </shortcut>
 
     <shortcut
@@ -33,6 +33,6 @@
         <intent
             android:action="io.github.legandy.volumemanager.action.TOGGLE_OVERLAY"
             android:targetPackage="io.github.legandy.volumemanager"
-            android:targetClass="io.github.legandy.volumemanager.ActionReceiver" />
+            android:targetClass="io.github.legandy.volumemanager.actions.ActionReceiver" />
     </shortcut>
 </shortcuts>

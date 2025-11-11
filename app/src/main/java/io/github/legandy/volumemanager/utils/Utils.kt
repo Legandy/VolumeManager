@@ -1,4 +1,4 @@
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.utils
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.ComponentName
@@ -6,6 +6,7 @@ import android.content.Context
 import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityManager
+import io.github.legandy.volumemanager.overlay.OverlayService
 
 /**
  * Checks if the VolumeManager accessibility service is enabled.
