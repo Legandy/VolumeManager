@@ -13,5 +13,7 @@
     <string name="accessibility_service_description">Volume overlay service to control per-app audio</string>
     <string name="unknown_action">Unknown shortcut action.</string>
     <string name="create_shortcut_label">Volume Control Shortcut</string>
+    <string name="no_active_audio_title">No Active Audio</string>
+    <string name="no_active_audio_description">Start playing media to control individual app volumes.</string>
 
 </resources>

@@ -13,7 +13,6 @@ import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import android.os.Build
 import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
@@ -37,6 +36,9 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.DoNotDisturbOn
 import androidx.compose.material.icons.outlined.Podcasts
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,6 +59,7 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import androidx.core.content.ContextCompat
 import io.github.legandy.volumemanager.settings.AppFilterMode
 import io.github.legandy.volumemanager.settings.SettingsDataStore
 import io.github.legandy.volumemanager.app.MyApplication
@@ -121,12 +124,7 @@ class OverlayService : AccessibilityService() {
             addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(systemStateReceiver, filter, RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            registerReceiver(systemStateReceiver, filter)
-        }
+        ContextCompat.registerReceiver(this, systemStateReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -207,20 +205,17 @@ class OverlayService : AccessibilityService() {
     }
 
     private fun getMediaOutputDeviceType(): Int {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-            val device = devices.firstOrNull {
-                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-                        it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
-                        it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-                        it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-            }
-            return device?.type ?: AudioDeviceInfo.TYPE_UNKNOWN
+        val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        val device = devices.firstOrNull {
+            it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
+                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
+                    it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
         }
-        return AudioDeviceInfo.TYPE_UNKNOWN
+        return device?.type ?: AudioDeviceInfo.TYPE_UNKNOWN
     }
 
-    @SuppressLint("InflateParams")
+    @SuppressLint("InflateParams", "ClickableViewAccessibility")
     private fun createView(): View = ComposeView(this).apply {
         val lifecycleOwner = ServiceLifecycleOwner()
         setViewTreeLifecycleOwner(lifecycleOwner)
@@ -293,7 +288,7 @@ class OverlayService : AccessibilityService() {
                     }
                 }
 
-                Divider(modifier = Modifier.padding(top = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -311,17 +306,13 @@ class OverlayService : AccessibilityService() {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
                         IconButton(onClick = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                try {
-                                    val intent = Intent("android.media.action.SHOW_AUDIO_OUTPUT_SWITCHER")
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    context.startActivity(intent)
-                                    hideView()
-                                } catch (e: ActivityNotFoundException) {
-                                    Toast.makeText(context, "Output switcher not available", Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                Toast.makeText(context, "Feature requires Android 11+", Toast.LENGTH_SHORT).show()
+                            try {
+                                val intent = Intent("android.media.action.SHOW_AUDIO_OUTPUT_SWITCHER")
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                                hideView()
+                            } catch (e: ActivityNotFoundException) {
+                                Toast.makeText(context, "Output switcher not available", Toast.LENGTH_SHORT).show()
                             }
                         }) {
                             Icon(Icons.Default.SpeakerGroup, contentDescription = "Media Output")
@@ -445,12 +436,12 @@ class OverlayService : AccessibilityService() {
         var currentVolume by remember(triggerChange) { mutableIntStateOf(try { audioManager.getStreamVolume(streamType) } catch (e: Exception) { 0 }) }
         val interactionSource = remember { MutableInteractionSource() }
         val isMuted by remember(triggerChange) { mutableStateOf(audioManager.isStreamMute(streamType)) }
-        val ringerMode by remember(triggerChange) { mutableStateOf(audioManager.ringerMode) }
+        val ringerMode by remember(triggerChange) { mutableIntStateOf(audioManager.ringerMode) }
 
         val initialLastVolume = remember(streamType) {
             if (currentVolume > 0) currentVolume else (maxVolume * 0.7).toInt().coerceAtLeast(1)
         }
-        var lastKnownVolume by remember(streamType) { mutableStateOf(initialLastVolume) }
+        var lastKnownVolume by remember(streamType) { mutableIntStateOf(initialLastVolume) }
 
         LaunchedEffect(currentVolume) {
             if (currentVolume > 0) {
@@ -507,13 +498,13 @@ class OverlayService : AccessibilityService() {
             }
             AudioManager.STREAM_MUSIC -> {
                 name = "Media"
-                val deviceType by remember(triggerChange) { mutableStateOf(getMediaOutputDeviceType()) }
+                val deviceType by remember(triggerChange) { mutableIntStateOf(getMediaOutputDeviceType()) }
                 val baseIcon = when (deviceType) {
                     AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> Icons.Default.BluetoothAudio
                     AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> Icons.Default.Headphones
-                    else -> Icons.Default.VolumeUp
+                    else -> Icons.AutoMirrored.Filled.VolumeUp
                 }
-                icon = if (isMuted) Icons.Default.VolumeOff else baseIcon
+                icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else baseIcon
                 sliderEnabled = true
                 onIconClick = {
                     val direction = if (isMuted) AudioManager.ADJUST_UNMUTE else AudioManager.ADJUST_MUTE
@@ -615,7 +606,7 @@ class OverlayService : AccessibilityService() {
     @Composable
     private fun AppSliderRow(app: Manager.AppState, pauseTimer: () -> Unit, resumeTimer: () -> Unit) {
         val interactionSource = remember { MutableInteractionSource() }
-        var lastVolume by remember(app.packageName) { mutableStateOf(if (app.volume > 0.05f) app.volume else 0.7f) }
+        var lastVolume by remember(app.packageName) { mutableFloatStateOf(if (app.volume > 0.05f) app.volume else 0.7f) }
         val isMuted = app.volume < 0.01f
 
         LaunchedEffect(app.volume) {
