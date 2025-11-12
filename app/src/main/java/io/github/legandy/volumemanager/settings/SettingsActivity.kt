@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.settings
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
@@ -29,6 +29,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Color
+import io.github.legandy.volumemanager.core.Manager
+import io.github.legandy.volumemanager.settings.ui.SettingSwitch
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.outlined.*
+import androidx.compose.ui.res.stringResource
+import io.github.legandy.volumemanager.R
 
 // Uses the stable ImageBitmap
 data class InstalledApp(val packageName: String, val name: String, val icon: ImageBitmap)
@@ -46,7 +52,7 @@ fun SettingsScreen(
     val viewModel: SettingsViewModel = viewModel()
 
     val tabs = listOf(
-        TabItem("Volume Control", Icons.Outlined.VolumeUp, Icons.Filled.VolumeUp),
+        TabItem("Volume Control", Icons.AutoMirrored.Outlined.VolumeUp, Icons.AutoMirrored.Filled.VolumeUp),
         TabItem("Overlay", Icons.Outlined.Visibility, Icons.Filled.Visibility),
         TabItem("Apps", Icons.Outlined.Apps, Icons.Filled.Apps)
     )
@@ -153,7 +159,7 @@ private fun ThemeSelectionDialog(settingsDataStore: SettingsDataStore, onDismiss
 @Composable
 private fun TimeoutSelectionDialog(settingsDataStore: SettingsDataStore, onDismiss: () -> Unit, scope: CoroutineScope) {
     val currentTimeout by settingsDataStore.overlayTimeout.collectAsState(initial = 4000)
-    var sliderValue by remember { mutableStateOf(currentTimeout.toFloat()) }
+    var sliderValue by remember { mutableFloatStateOf(currentTimeout.toFloat()) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Overlay Timeout") },
@@ -183,7 +189,7 @@ fun VolumeControlTab(manager: Manager) {
             }
         } else {
             item {
-                EmptyState(Icons.Outlined.VolumeOff, "No Active Audio", "Start playing media to control individual app volumes.")
+                EmptyState(Icons.AutoMirrored.Outlined.VolumeOff, stringResource(R.string.no_active_audio_title), stringResource(R.string.no_active_audio_description))
             }
         }
     }
@@ -336,4 +342,3 @@ private fun EmptyState(icon: ImageVector, title: String, description: String) {
         }
     }
 }
-

@@ -1,4 +1,4 @@
-package io.github.legandy.volumemanager
+package io.github.legandy.volumemanager.settings
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import io.github.legandy.volumemanager.app.MyApplication
 
 data class AppFilterUiState(
     val isLoading: Boolean = true,
