@@ -8,7 +8,6 @@ import android.content.IntentFilter
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.app.NotificationManager
-import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.core.content.ContextCompat
 import io.github.legandy.volumemanager.app.MyApplication
@@ -77,17 +76,14 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun getMediaOutputDeviceType(): Int {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-            val device = devices.firstOrNull {
-                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-                        it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
-                        it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-                        it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-            }
-            return device?.type ?: AudioDeviceInfo.TYPE_UNKNOWN
+        val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        val device = devices.firstOrNull {
+            it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
+                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
+                    it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
         }
-        return AudioDeviceInfo.TYPE_UNKNOWN
+        return device?.type ?: AudioDeviceInfo.TYPE_UNKNOWN
     }
 
     fun setStreamVolume(streamType: Int, volume: Int) {
