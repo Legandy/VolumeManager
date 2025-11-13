@@ -143,6 +143,8 @@ class OverlayService : AccessibilityService() {
     private var cachedTimeout = 3000
     private var cachedCloseOnBack = true
 
+    private var serviceLifecycleOwner: ServiceLifecycleOwner? = null
+
     override fun onCreate() {
         super.onCreate()
         serviceScope.launch { settingsDataStore.showOverlayOnVolumeKey.collect { cachedShowOnKey = it } }
@@ -207,6 +209,8 @@ class OverlayService : AccessibilityService() {
             windowManager.removeView(it)
             view = null
         }
+        serviceLifecycleOwner?.destroy()
+        serviceLifecycleOwner = null
     }
 
     private fun pauseIdleTimer() {
@@ -229,11 +233,11 @@ class OverlayService : AccessibilityService() {
 
     @SuppressLint("InflateParams", "ClickableViewAccessibility")
     private fun createView(): View = ComposeView(this).apply {
-        val lifecycleOwner = ServiceLifecycleOwner()
-        setViewTreeLifecycleOwner(lifecycleOwner)
-        setViewTreeSavedStateRegistryOwner(lifecycleOwner)
-        setViewTreeViewModelStoreOwner(lifecycleOwner)
-        lifecycleOwner.resume()
+        serviceLifecycleOwner = ServiceLifecycleOwner()
+        setViewTreeLifecycleOwner(serviceLifecycleOwner)
+        setViewTreeSavedStateRegistryOwner(serviceLifecycleOwner)
+        setViewTreeViewModelStoreOwner(serviceLifecycleOwner)
+        serviceLifecycleOwner?.resume()
 
         setOnTouchListener { _, event ->
             if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) {
@@ -695,6 +699,8 @@ class OverlayService : AccessibilityService() {
         super.onDestroy()
         view?.let { windowManager.removeView(it) }
         serviceScope.cancel()
+        serviceLifecycleOwner?.destroy()
+        serviceLifecycleOwner = null
     }
 
 
