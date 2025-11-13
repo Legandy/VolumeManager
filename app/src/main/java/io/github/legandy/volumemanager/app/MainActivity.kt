@@ -4,10 +4,8 @@ package io.github.legandy.volumemanager.app
 
 import android.Manifest
 import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -21,7 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.* 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -32,7 +30,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
-import androidx.compose.ui.graphics.vector.ImageVector
 import io.github.legandy.volumemanager.core.Manager
 import io.github.legandy.volumemanager.overlay.OverlayService
 import io.github.legandy.volumemanager.settings.ui.SettingsScreen
@@ -111,9 +108,8 @@ class MainActivity : ComponentActivity() {
         when {
             manager.shizukuReady && allPermissionsGranted -> {
                 SettingsScreen(
-                    MyApplication.settings,
-                    { finish() },
-                    manager
+                    settingsDataStore = MyApplication.settings,
+                    manager = manager
                 )
             }
             manager.shizukuReady -> {
@@ -127,8 +123,7 @@ class MainActivity : ComponentActivity() {
                     onOpenNotificationAccessClick = { openNotificationAccessSettings() },
                     onGrantBluetoothClick = {
                         bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
-                    },
-                    onRefresh = { checkCounter++ }
+                    }
                 )
             }
             else -> WaitingForShizukuScreen()
@@ -144,8 +139,7 @@ class MainActivity : ComponentActivity() {
         onGrantShizukuClick: () -> Unit,
         onOpenAccessibilityClick: () -> Unit,
         onOpenNotificationAccessClick: () -> Unit,
-        onGrantBluetoothClick: () -> Unit,
-        onRefresh: () -> Unit
+        onGrantBluetoothClick: () -> Unit
     ) {
         Scaffold(topBar = { TopAppBar(title = { Text("VolumeManager Setup") }) }) { padding ->
             Column(
@@ -172,27 +166,23 @@ class MainActivity : ComponentActivity() {
                 StatusCard(
                     title = "Shizuku Permission",
                     description = "For per-app audio control.",
-                    granted = hasShizuku,
-                    icon = Icons.Default.Security
+                    granted = hasShizuku
                 )
                 StatusCard(
                     title = "Accessibility Service",
                     description = "To show the volume overlay.",
-                    granted = hasAccessibility,
-                    icon = Icons.Default.Visibility
+                    granted = hasAccessibility
                 )
                 StatusCard(
                     title = "Notification Access",
                     description = "To change Ringer Mode & DND.",
-                    granted = hasNotificationAccess,
-                    icon = Icons.Default.Notifications
+                    granted = hasNotificationAccess
                 )
                 // New Status Card for Bluetooth
                 StatusCard(
                     title = "Bluetooth Permission",
                     description = "To detect Bluetooth devices.",
-                    granted = hasBluetooth,
-                    icon = Icons.Default.Bluetooth
+                    granted = hasBluetooth
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -212,7 +202,6 @@ class MainActivity : ComponentActivity() {
                         Text("3. Grant Notification Access")
                     }
                 }
-                // New Button for Bluetooth
                 if (!hasBluetooth) {
                     Button(onClick = onGrantBluetoothClick, modifier = Modifier.fillMaxWidth()) {
                         Text("4. Grant Bluetooth Permission")
@@ -223,7 +212,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun StatusCard(title: String, description: String, granted: Boolean, icon: ImageVector) {
+    private fun StatusCard(title: String, description: String, granted: Boolean) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -270,7 +259,6 @@ class MainActivity : ComponentActivity() {
         finish()
     }
 
-    // WaitingForShizukuScreen remains unchanged
     @Composable
     private fun WaitingForShizukuScreen() { /* ... */ }
 }

@@ -1,344 +1,49 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
-
 package io.github.legandy.volumemanager.settings
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import androidx.compose.ui.graphics.Color
+import android.content.Context
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStoreFile
 import io.github.legandy.volumemanager.core.Manager
-import io.github.legandy.volumemanager.settings.ui.SettingSwitch
-import androidx.compose.material.icons.automirrored.filled.*
-import androidx.compose.material.icons.automirrored.outlined.*
-import androidx.compose.ui.res.stringResource
-import io.github.legandy.volumemanager.R
+import io.github.legandy.volumemanager.settings.ui.SettingsScreen
+import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 
-// Uses the stable ImageBitmap
-data class InstalledApp(val packageName: String, val name: String, val icon: ImageBitmap)
-data class TabItem(val title: String, val icon: ImageVector, val selectedIcon: ImageVector)
+class SettingsActivity : ComponentActivity() {
 
-@Composable
-fun SettingsScreen(
-    settingsDataStore: SettingsDataStore,
-    onBack: () -> Unit,
-    manager: Manager
-) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var showOptionsMenu by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val viewModel: SettingsViewModel = viewModel()
+    private lateinit var settingsDataStore: SettingsDataStore
+    private lateinit var volumesDataStore: DataStore<Preferences>
+    private lateinit var manager: Manager
 
-    val tabs = listOf(
-        TabItem("Volume Control", Icons.AutoMirrored.Outlined.VolumeUp, Icons.AutoMirrored.Filled.VolumeUp),
-        TabItem("Overlay", Icons.Outlined.Visibility, Icons.Filled.Visibility),
-        TabItem("Apps", Icons.Outlined.Apps, Icons.Filled.Apps)
-    )
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.Medium) },
-                navigationIcon = {
-                    val statusColor = when {
-                        manager.shizukuReady && manager.shizukuPermission -> MaterialTheme.colorScheme.primary
-                        manager.shizukuReady -> Color(0xFFFFA500) // Orange for warning
-                        else -> MaterialTheme.colorScheme.error
-                    }
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Service Status",
-                        tint = statusColor,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                },
-                actions = {
-                    Box {
-                        IconButton(onClick = { showOptionsMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More Settings")
-                        }
-                        OptionsDropdownMenu(
-                            expanded = showOptionsMenu,
-                            onDismissRequest = { showOptionsMenu = false },
-                            settingsDataStore = settingsDataStore,
-                            scope = scope
-                        )
-                    }
-                }
-            )
-        },
-    ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
-                tabs.forEachIndexed { index, tab ->
-                    val isSelected = selectedTabIndex == index
-                    Tab(selected = isSelected, onClick = { selectedTabIndex = index }) {
-                        Column(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            Icon(imageVector = if (isSelected) tab.selectedIcon else tab.icon, contentDescription = tab.title, tint = contentColor)
-                            Text(text = tab.title, color = contentColor)
-                        }
-                    }
-                }
-            }
-            AnimatedContent(targetState = selectedTabIndex, label = "tab-content") { targetIndex ->
-                when (targetIndex) {
-                    0 -> VolumeControlTab(manager = manager)
-                    1 -> OverlaySettingsTab(settingsDataStore = settingsDataStore)
-                    2 -> AppFilteringTab(viewModel = viewModel)
-                }
-            }
-        }
-    }
-}
+        settingsDataStore = SettingsDataStore(provideSettingsDataStore(applicationContext))
+        volumesDataStore = provideVolumesDataStore(applicationContext)
+        manager = Manager(applicationContext, volumesDataStore)
 
-@Composable
-private fun OptionsDropdownMenu(expanded: Boolean, onDismissRequest: () -> Unit, settingsDataStore: SettingsDataStore, scope: CoroutineScope) {
-    var showThemeDialog by remember { mutableStateOf(false) }
-    var showTimeoutDialog by remember { mutableStateOf(false) }
-
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
-        DropdownMenuItem(text = { Text("Theme") }, onClick = { showThemeDialog = true; onDismissRequest() })
-        DropdownMenuItem(text = { Text("Overlay Timeout") }, onClick = { showTimeoutDialog = true; onDismissRequest() })
-    }
-
-    if (showThemeDialog) {
-        ThemeSelectionDialog(settingsDataStore = settingsDataStore, onDismiss = { showThemeDialog = false }, scope = scope)
-    }
-    if (showTimeoutDialog) {
-        TimeoutSelectionDialog(settingsDataStore = settingsDataStore, onDismiss = { showTimeoutDialog = false }, scope = scope)
-    }
-}
-
-@Composable
-private fun ThemeSelectionDialog(settingsDataStore: SettingsDataStore, onDismiss: () -> Unit, scope: CoroutineScope) {
-    val currentTheme by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Choose Theme") },
-        text = {
-            Column(Modifier.selectableGroup()) {
-                ThemeMode.entries.forEach { theme ->
-                    Row(Modifier.fillMaxWidth().selectable(selected = (theme == currentTheme), onClick = { scope.launch { settingsDataStore.setThemeMode(theme) } }, role = Role.RadioButton).padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = (theme == currentTheme), onClick = null)
-                        Text(text = theme.name.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 16.dp))
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
-    )
-}
-
-@Composable
-private fun TimeoutSelectionDialog(settingsDataStore: SettingsDataStore, onDismiss: () -> Unit, scope: CoroutineScope) {
-    val currentTimeout by settingsDataStore.overlayTimeout.collectAsState(initial = 4000)
-    var sliderValue by remember { mutableFloatStateOf(currentTimeout.toFloat()) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Overlay Timeout") },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("${(sliderValue / 1000).toInt()} seconds", fontWeight = FontWeight.Bold)
-                Slider(value = sliderValue, onValueChange = { sliderValue = it }, onValueChangeFinished = { scope.launch { settingsDataStore.setOverlayTimeout(sliderValue.toInt()) } }, valueRange = 1000f..15000f, steps = 27)
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } }
-    )
-}
-
-
-@Composable
-fun VolumeControlTab(manager: Manager) {
-    val activeApps = manager.apps.values.filter { it.players.isNotEmpty() }.sortedBy { it.label.lowercase() }
-
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (activeApps.isNotEmpty()) {
-            items(activeApps, key = { it.packageName }) { app ->
-                AppVolumeCardInSettings(app, manager)
-            }
-        } else {
-            item {
-                EmptyState(Icons.AutoMirrored.Outlined.VolumeOff, stringResource(R.string.no_active_audio_title), stringResource(R.string.no_active_audio_description))
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun AppVolumeCardInSettings(app: Manager.AppState, manager: Manager) {
-    Row(Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Image(
-            bitmap = app.icon, // Uses ImageBitmap
-            contentDescription = app.label,
-            Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))
-        )
-        Spacer(Modifier.width(16.dp))
-        Column(Modifier.weight(1f)) {
-            Text(app.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Slider(value = app.volume, onValueChange = { manager.setAppVolume(app.packageName, it) })
-        }
-    }
-}
-
-
-
-@Composable
-fun OverlaySettingsTab(settingsDataStore: SettingsDataStore) {
-    val scope = rememberCoroutineScope()
-    val showVolumeKey by settingsDataStore.showOverlayOnVolumeKey.collectAsState(initial = true)
-    val showLock by settingsDataStore.showOverlayOnLockscreen.collectAsState(initial = false)
-    val closeOnBack by settingsDataStore.closeOverlayOnBack.collectAsState(initial = true)
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        item {
-            Card(modifier = Modifier.padding(16.dp)) {
-                Column {
-                    SettingSwitch(title = "Trigger on Volume Key", subtitle = "Show overlay when volume buttons are pressed", checked = showVolumeKey, onCheckedChange = { scope.launch { settingsDataStore.setShowOverlayOnVolumeKey(it) } })
-                    SettingSwitch(title = "Allow on Lock Screen", subtitle = "Permit overlay while device is locked", checked = showLock, enabled = showVolumeKey, onCheckedChange = { scope.launch { settingsDataStore.setShowOverlayOnLockscreen(it) } })
-                    SettingSwitch(title = "Close on Back Gesture", subtitle = "Hide the overlay with the back button or gesture", checked = closeOnBack, onCheckedChange = { scope.launch { settingsDataStore.setCloseOverlayOnBack(it) } }, showDivider = false)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AppFilteringTab(viewModel: SettingsViewModel) {
-    val uiState by viewModel.uiState.collectAsState()
-    val appFilterMode by viewModel.appFilterMode.collectAsState(initial = AppFilterMode.SHOW_ALL)
-    val appBlacklist by viewModel.appBlacklist.collectAsState(initial = emptySet())
-    val appWhitelist by viewModel.appWhitelist.collectAsState(initial = emptySet())
-
-    val filteredApps = remember(uiState.searchQuery, uiState.allApps) {
-        if (uiState.searchQuery.isBlank()) {
-            uiState.allApps
-        } else {
-            uiState.allApps.filter { it.name.contains(uiState.searchQuery, true) || it.packageName.contains(uiState.searchQuery, true) }
-        }
-    }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            Card {
-                Column(Modifier.padding(16.dp).selectableGroup()) {
-                    Text("Filter Mode", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(8.dp))
-                    FilterModeOption("Show All Apps", "All apps with audio will appear", appFilterMode == AppFilterMode.SHOW_ALL) { viewModel.setAppFilterMode(AppFilterMode.SHOW_ALL) }
-                    FilterModeOption("Blacklist", "Hide selected apps from the overlay", appFilterMode == AppFilterMode.BLACKLIST) { viewModel.setAppFilterMode(AppFilterMode.BLACKLIST) }
-                    FilterModeOption("Whitelist", "Only show selected apps in the overlay", appFilterMode == AppFilterMode.WHITELIST) { viewModel.setAppFilterMode(AppFilterMode.WHITELIST) }
-                }
-            }
-        }
-
-        if (appFilterMode != AppFilterMode.SHOW_ALL) {
-            item {
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = { viewModel.onSearchQueryChanged(it) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Search apps") },
-                    leadingIcon = { Icon(Icons.Default.Search, null) },
-                    trailingIcon = { if(uiState.searchQuery.isNotEmpty()) IconButton(onClick = { viewModel.onSearchQueryChanged("") }) { Icon(Icons.Default.Clear, null) } },
-                    singleLine = true
+        setContent {
+            VolumeManagerTheme {
+                SettingsScreen(
+                    settingsDataStore = settingsDataStore,
+                    manager = manager
                 )
             }
-
-            if (uiState.isLoading) {
-                item { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
-            } else {
-                items(filteredApps, key = { it.packageName }) { app ->
-                    val isSelected = if (appFilterMode == AppFilterMode.BLACKLIST) app.packageName in appBlacklist else app.packageName in appWhitelist
-                    AppFilterItem(
-                        app = app,
-                        isSelected = isSelected,
-                        onSelectionChanged = { checked ->
-                            when (appFilterMode) {
-                                AppFilterMode.BLACKLIST -> viewModel.updateBlacklist(app.packageName, checked)
-                                AppFilterMode.WHITELIST -> viewModel.updateWhitelist(app.packageName, checked)
-                                else -> {}
-                            }
-                        }
-                    )
-                }
-            }
         }
     }
-}
 
-@Composable
-private fun FilterModeOption(title: String, subtitle: String, selected: Boolean, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().selectable(selected, onClick = onClick, role = Role.RadioButton).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        RadioButton(selected = selected, onClick = null)
-        Spacer(Modifier.width(16.dp))
-        Column {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
-private fun AppFilterItem(app: InstalledApp, isSelected: Boolean, onSelectionChanged: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Image(
-            bitmap = app.icon, // Uses ImageBitmap
-            contentDescription = app.name,
-            Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+    private fun provideSettingsDataStore(context: Context): DataStore<Preferences> {
+        return PreferenceDataStoreFactory.create(
+            produceFile = { context.preferencesDataStoreFile("settings") }
         )
-        Spacer(Modifier.width(16.dp))
-        Column(Modifier.weight(1f)) {
-            Text(app.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(app.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        Checkbox(checked = isSelected, onCheckedChange = onSelectionChanged)
     }
-}
 
-@Composable
-private fun EmptyState(icon: ImageVector, title: String, description: String) {
-    Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
-            Text(title, style = MaterialTheme.typography.headlineSmall)
-            Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-        }
+    private fun provideVolumesDataStore(context: Context): DataStore<Preferences> {
+        return PreferenceDataStoreFactory.create(
+            produceFile = { context.preferencesDataStoreFile("volumes") }
+        )
     }
 }

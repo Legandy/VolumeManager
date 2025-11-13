@@ -16,7 +16,7 @@ import io.github.legandy.volumemanager.app.MyApplication
 data class AppFilterUiState(
     val isLoading: Boolean = true,
     val searchQuery: String = "",
-    val allApps: List<InstalledApp> = emptyList()
+    val allApps: List<InstalledAppData> = emptyList()
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -43,7 +43,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     .mapNotNull {
                         try {
                             // Convert the icon to a stable ImageBitmap here
-                            InstalledApp(
+                            InstalledAppData(
                                 it.packageName,
                                 it.loadLabel(packageManager).toString(),
                                 it.loadIcon(packageManager).toBitmap().asImageBitmap()

@@ -16,18 +16,19 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VolumeOff
-import androidx.compose.material.icons.outlined.VolumeUp
+import androidx.compose.material.icons.automirrored.outlined.VolumeOff
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,33 +44,42 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.legandy.volumemanager.R
 import io.github.legandy.volumemanager.core.Manager
+import io.github.legandy.volumemanager.settings.AppFilterMode
+import io.github.legandy.volumemanager.settings.InstalledAppData
+import io.github.legandy.volumemanager.settings.SettingsDataStore
+import io.github.legandy.volumemanager.settings.SettingsViewModel
+import io.github.legandy.volumemanager.settings.ThemeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingSwitch(
+    modifier: Modifier = Modifier,
     title: String,
     subtitle: String? = null,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
     enabled: Boolean = true,
     leading: (@Composable (() -> Unit))? = null,
     showDivider: Boolean = true
@@ -95,18 +105,18 @@ fun SettingSwitch(
             Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
         }
         if (showDivider) {
-            Divider()
+            HorizontalDivider()
         }
     }
 }
 
 @Composable
 fun SettingSlider(
+    modifier: Modifier = Modifier,
     title: String,
     value: Float,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit,
-    modifier: Modifier = Modifier,
     range: ClosedFloatingPointRange<Float> = 0f..1f,
     steps: Int = 0,
     valueLabel: @Composable (Float) -> Unit = { Text("${(it * 100).toInt()}%") },
@@ -137,14 +147,10 @@ fun SettingSlider(
     }
 }
 
-// Uses the stable ImageBitmap
-data class InstalledApp(val packageName: String, val name: String, val icon: ImageBitmap)
-data class TabItem(val title: String, val icon: ImageVector, val selectedIcon: ImageVector)
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     settingsDataStore: SettingsDataStore,
-    onBack: () -> Unit,
     manager: Manager
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -153,7 +159,7 @@ fun SettingsScreen(
     val viewModel: SettingsViewModel = viewModel()
 
     val tabs = listOf(
-        TabItem("Volume Control", Icons.Outlined.VolumeUp, Icons.Filled.VolumeUp),
+        TabItem("Volume Control", Icons.AutoMirrored.Outlined.VolumeUp, Icons.AutoMirrored.Filled.VolumeUp),
         TabItem("Overlay", Icons.Outlined.Visibility, Icons.Filled.Visibility),
         TabItem("Apps", Icons.Outlined.Apps, Icons.Filled.Apps)
     )
@@ -161,7 +167,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.Companion.Medium) },
+                title = { Text("Settings", fontWeight = FontWeight.Medium) },
                 navigationIcon = {
                     val statusColor = when {
                         manager.shizukuReady && manager.shizukuPermission -> MaterialTheme.colorScheme.primary
@@ -253,7 +259,7 @@ private fun ThemeSelectionDialog(settingsDataStore: SettingsDataStore, onDismiss
         onDismissRequest = onDismiss,
         title = { Text("Choose Theme") },
         text = {
-            Column(Modifier.Companion.selectableGroup()) {
+            Column(Modifier.selectableGroup()) {
                 ThemeMode.entries.forEach { theme ->
                     Row(
                         Modifier.fillMaxWidth().selectable(
@@ -279,7 +285,7 @@ private fun ThemeSelectionDialog(settingsDataStore: SettingsDataStore, onDismiss
 @Composable
 private fun TimeoutSelectionDialog(settingsDataStore: SettingsDataStore, onDismiss: () -> Unit, scope: CoroutineScope) {
     val currentTimeout by settingsDataStore.overlayTimeout.collectAsState(initial = 4000)
-    var sliderValue by remember { mutableStateOf(currentTimeout.toFloat()) }
+    var sliderValue by remember { mutableFloatStateOf(currentTimeout.toFloat()) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Overlay Timeout") },
@@ -287,7 +293,7 @@ private fun TimeoutSelectionDialog(settingsDataStore: SettingsDataStore, onDismi
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     "${(sliderValue / 1000).toInt()} seconds",
-                    fontWeight = FontWeight.Companion.Bold
+                    fontWeight = FontWeight.Bold
                 )
                 Slider(
                     value = sliderValue,
@@ -312,7 +318,7 @@ fun VolumeControlTab(manager: Manager) {
     val activeApps = manager.apps.values.filter { it.players.isNotEmpty() }.sortedBy { it.label.lowercase() }
 
     LazyColumn(
-        Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -323,9 +329,9 @@ fun VolumeControlTab(manager: Manager) {
         } else {
             item {
                 EmptyState(
-                    Icons.Outlined.VolumeOff,
-                    "No Active Audio",
-                    "Start playing media to control individual app volumes."
+                    Icons.AutoMirrored.Outlined.VolumeOff,
+                    stringResource(R.string.no_active_audio_title),
+                    stringResource(R.string.no_active_audio_description)
                 )
             }
         }
@@ -343,7 +349,7 @@ private fun AppVolumeCardInSettings(app: Manager.AppState, manager: Manager) {
         )
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(app.label, maxLines = 1, overflow = TextOverflow.Companion.Ellipsis)
+            Text(app.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Slider(value = app.volume, onValueChange = { manager.setAppVolume(app.packageName, it) })
         }
     }
@@ -516,17 +522,17 @@ private fun FilterModeOption(title: String, subtitle: String, selected: Boolean,
 }
 
 @Composable
-private fun AppFilterItem(app: InstalledApp, isSelected: Boolean, onSelectionChanged: (Boolean) -> Unit) {
+private fun AppFilterItem(app: InstalledAppData, isSelected: Boolean, onSelectionChanged: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Image(
             bitmap = app.icon, // Uses ImageBitmap
             contentDescription = app.name,
-            Modifier.size(40.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+            Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
         )
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(app.name, maxLines = 1, overflow = TextOverflow.Companion.Ellipsis)
-            Text(app.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Companion.Ellipsis)
+            Text(app.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(app.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Checkbox(checked = isSelected, onCheckedChange = onSelectionChanged)
     }
@@ -543,7 +549,7 @@ private fun EmptyState(icon: ImageVector, title: String, description: String) {
                 modifier = Modifier.size(48.dp)
             )
             Text(title, style = MaterialTheme.typography.headlineSmall)
-            Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Companion.Center)
+            Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         }
     }
 }
