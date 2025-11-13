@@ -20,6 +20,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import io.github.legandy.volumemanager.R
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 
 class ShortcutActivity : ComponentActivity() {
 
@@ -78,15 +81,16 @@ class ShortcutActivity : ComponentActivity() {
             action = info.action
         }
 
-        val resultIntent = Intent()
-        resultIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-        resultIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, info.label)
-        resultIntent.putExtra(
-            Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-            Intent.ShortcutIconResource.fromContext(this, R.mipmap.ic_launcher)
-        )
+        val shortcutInfo = ShortcutInfoCompat.Builder(this, info.label)
+            .setShortLabel(info.label)
+            .setLongLabel(info.label)
+            .setIcon(IconCompat.createWithResource(this, R.mipmap.ic_launcher))
+            .setIntent(shortcutIntent)
+            .build()
 
-        setResult(RESULT_OK, resultIntent)
+        ShortcutManagerCompat.requestPinShortcut(this, shortcutInfo, null)
+
+        setResult(RESULT_OK)
         finish()
     }
 
