@@ -75,6 +75,7 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
         )
     }
 
+    //not working yet
     private fun getMediaOutputDeviceType(): Int {
         val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
         val device = devices.firstOrNull {

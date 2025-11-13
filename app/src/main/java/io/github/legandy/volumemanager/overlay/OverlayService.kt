@@ -113,6 +113,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
 
 private enum class OverlayTab { SYSTEM, APPS }
 
@@ -229,6 +232,7 @@ class OverlayService : AccessibilityService() {
         val lifecycleOwner = ServiceLifecycleOwner()
         setViewTreeLifecycleOwner(lifecycleOwner)
         setViewTreeSavedStateRegistryOwner(lifecycleOwner)
+        setViewTreeViewModelStoreOwner(lifecycleOwner)
         lifecycleOwner.resume()
 
         setOnTouchListener { _, event ->
@@ -699,14 +703,20 @@ class OverlayService : AccessibilityService() {
     override fun onInterrupt() {}
 }
 
-private class ServiceLifecycleOwner : SavedStateRegistryOwner {
+private class ServiceLifecycleOwner : SavedStateRegistryOwner, ViewModelStoreOwner {
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
+    private val _viewModelStore = ViewModelStore() // Renamed to avoid hiding
     init {
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
     }
     fun resume() { lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME) }
+    fun destroy() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        _viewModelStore.clear() // Use the renamed property
+    }
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
     override val lifecycle: Lifecycle get() = lifecycleRegistry
+    override val viewModelStore: ViewModelStore get() = _viewModelStore // Override the getter to return the internal property
 }

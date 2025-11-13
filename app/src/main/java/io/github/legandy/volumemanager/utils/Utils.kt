@@ -8,10 +8,6 @@ import android.util.Log
 import android.view.accessibility.AccessibilityManager
 import io.github.legandy.volumemanager.overlay.OverlayService
 
-/**
- * Checks if the VolumeManager accessibility service is enabled.
- * Tries multiple methods for reliability across different Android versions.
- */
 fun isAccessibilityServiceEnabled(context: Context): Boolean {
     val tag = "VolumeManager.Utils"
 
