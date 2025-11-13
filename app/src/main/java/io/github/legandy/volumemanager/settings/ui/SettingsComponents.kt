@@ -159,9 +159,9 @@ fun SettingsScreen(
     val viewModel: SettingsViewModel = viewModel()
 
     val tabs = listOf(
-        TabItem("Volume Control", Icons.AutoMirrored.Outlined.VolumeUp, Icons.AutoMirrored.Filled.VolumeUp),
-        TabItem("Overlay", Icons.Outlined.Visibility, Icons.Filled.Visibility),
-        TabItem("Apps", Icons.Outlined.Apps, Icons.Filled.Apps)
+        SettingsTabItem("Volume Control", Icons.AutoMirrored.Outlined.VolumeUp, Icons.AutoMirrored.Filled.VolumeUp),
+        SettingsTabItem("Overlay", Icons.Outlined.Visibility, Icons.Filled.Visibility),
+        SettingsTabItem("Apps", Icons.Outlined.Apps, Icons.Filled.Apps)
     )
 
     Scaffold(
