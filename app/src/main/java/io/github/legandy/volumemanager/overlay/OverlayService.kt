@@ -3,13 +3,8 @@ package io.github.legandy.volumemanager.overlay
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
 import android.app.KeyguardManager
-import android.app.NotificationManager
-import android.bluetooth.BluetoothDevice
 import android.content.ActivityNotFoundException
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -21,26 +16,71 @@ import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.BluetoothAudio
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DoNotDisturbOn
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.PhoneDisabled
+import androidx.compose.material.icons.filled.Podcasts
+import androidx.compose.material.icons.filled.RingVolume
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SpeakerGroup
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.DoNotDisturbOn
 import androidx.compose.material.icons.outlined.Podcasts
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -55,16 +95,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import androidx.core.content.ContextCompat
+import io.github.legandy.volumemanager.app.MainActivity
+import io.github.legandy.volumemanager.app.MyApplication
+import io.github.legandy.volumemanager.core.Manager
 import io.github.legandy.volumemanager.settings.AppFilterMode
 import io.github.legandy.volumemanager.settings.SettingsDataStore
-import io.github.legandy.volumemanager.app.MyApplication
-import io.github.legandy.volumemanager.app.MainActivity
-import io.github.legandy.volumemanager.core.Manager
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -82,32 +122,23 @@ class OverlayService : AccessibilityService() {
         const val ACTION_SHOW_OVERLAY = "io.github.legandy.volumemanager.action.SHOW_OVERLAY"
         const val ACTION_HIDE_OVERLAY = "io.github.legandy.volumemanager.action.HIDE_OVERLAY"
         const val ACTION_TOGGLE_OVERLAY = "io.github.legandy.volumemanager.action.TOGGLE_OVERLAY"
-        private const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
     }
 
     private val windowManager: WindowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private val audioManager: AudioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
     private val keyguardManager: KeyguardManager by lazy { getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
-    private val notificationManager: NotificationManager by lazy { getSystemService(
-        NOTIFICATION_SERVICE
-    ) as NotificationManager }
+
     private val manager: Manager by lazy { MyApplication.manager }
     private val settingsDataStore: SettingsDataStore by lazy { MyApplication.settings }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isOverlayVisible by mutableStateOf(false)
     private var view: View? = null
     private var idleJob: Job? = null
-    private var volumeUpdateTrigger by mutableIntStateOf(0)
-    @Volatile private var cachedShowOnKey: Boolean = true
-    @Volatile private var cachedShowOnLock: Boolean = false
-    @Volatile private var cachedTimeout: Int = 4000
-    @Volatile private var cachedCloseOnBack: Boolean = true
 
-    private val systemStateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            volumeUpdateTrigger++
-        }
-    }
+    private var cachedShowOnKey = true
+    private var cachedShowOnLock = false
+    private var cachedTimeout = 3000
+    private var cachedCloseOnBack = true
 
     override fun onCreate() {
         super.onCreate()
@@ -115,16 +146,6 @@ class OverlayService : AccessibilityService() {
         serviceScope.launch { settingsDataStore.showOverlayOnLockscreen.collect { cachedShowOnLock = it } }
         serviceScope.launch { settingsDataStore.overlayTimeout.collect { cachedTimeout = it } }
         serviceScope.launch { settingsDataStore.closeOverlayOnBack.collect { cachedCloseOnBack = it } }
-
-        val filter = IntentFilter().apply {
-            addAction(VOLUME_CHANGED_ACTION)
-            addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
-            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
-            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
-            addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
-        }
-
-        ContextCompat.registerReceiver(this, systemStateReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -141,13 +162,12 @@ class OverlayService : AccessibilityService() {
         val isVolumeKey = event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
 
         if (isVolumeKey) {
-            if (!cachedShowOnKey) {
-                return false
-            }
-
             val shouldShowOverlay = !(keyguardManager.isKeyguardLocked && !cachedShowOnLock)
 
             if (event.action == KeyEvent.ACTION_DOWN) {
+                if (!cachedShowOnKey) {
+                    return false
+                }
                 val direction = if (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER
                 audioManager.adjustSuggestedStreamVolume(direction, AudioManager.USE_DEFAULT_STREAM_TYPE, 0)
 
@@ -204,17 +224,6 @@ class OverlayService : AccessibilityService() {
         resumeIdleTimer()
     }
 
-    private fun getMediaOutputDeviceType(): Int {
-        val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-        val device = devices.firstOrNull {
-            it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
-                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-                    it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-        }
-        return device?.type ?: AudioDeviceInfo.TYPE_UNKNOWN
-    }
-
     @SuppressLint("InflateParams", "ClickableViewAccessibility")
     private fun createView(): View = ComposeView(this).apply {
         val lifecycleOwner = ServiceLifecycleOwner()
@@ -232,6 +241,7 @@ class OverlayService : AccessibilityService() {
         }
 
         setContent {
+            val overlayViewModel: OverlayViewModel = viewModel(factory = OverlayViewModelFactory(application))
             VolumeManagerTheme {
                 AnimatedVisibility(
                     visible = isOverlayVisible,
@@ -240,7 +250,7 @@ class OverlayService : AccessibilityService() {
                 ) {
                     DisposableEffect(Unit) { onDispose { if (!isOverlayVisible) onOverlayHidden() } }
                     OverlayContent(
-                        volumeUpdateTrigger = volumeUpdateTrigger,
+                        overlayViewModel = overlayViewModel,
                         resetTimer = ::resetIdleTimer,
                         pauseTimer = ::pauseIdleTimer,
                         resumeTimer = ::resumeIdleTimer
@@ -250,10 +260,9 @@ class OverlayService : AccessibilityService() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun OverlayContent(
-        volumeUpdateTrigger: Int,
+        overlayViewModel: OverlayViewModel,
         resetTimer: () -> Unit,
         pauseTimer: () -> Unit,
         resumeTimer: () -> Unit
@@ -261,9 +270,7 @@ class OverlayService : AccessibilityService() {
         var selectedTab by remember { mutableStateOf(OverlayTab.SYSTEM) }
         val context = LocalContext.current
 
-        val isDndOn by remember(volumeUpdateTrigger) {
-            mutableStateOf(notificationManager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL)
-        }
+        val uiState by overlayViewModel.uiState.collectAsState()
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -282,7 +289,7 @@ class OverlayService : AccessibilityService() {
                         label = "overlay-tab-content"
                     ) { tab ->
                         when (tab) {
-                            OverlayTab.SYSTEM -> SystemVolumeSliders(volumeUpdateTrigger, pauseTimer, resumeTimer)
+                            OverlayTab.SYSTEM -> SystemVolumeSliders(overlayViewModel, pauseTimer, resumeTimer)
                             OverlayTab.APPS -> AppVolumeSliders(pauseTimer, resumeTimer)
                         }
                     }
@@ -349,17 +356,13 @@ class OverlayService : AccessibilityService() {
                     // Right Group
                     Row {
                         IconButton(onClick = {
-                            if (isDndOn) {
-                                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
-                            } else {
-                                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
-                            }
+                            overlayViewModel.setDnd(!uiState.isDndOn)
                             resetTimer()
                         }) {
                             Icon(
-                                imageVector = if (isDndOn) Icons.Filled.DoNotDisturbOn else Icons.Outlined.DoNotDisturbOn,
+                                imageVector = if (uiState.isDndOn) Icons.Filled.DoNotDisturbOn else Icons.Outlined.DoNotDisturbOn,
                                 contentDescription = "Do Not Disturb",
-                                tint = if(isDndOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if(uiState.isDndOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         IconButton(onClick = { hideView() }) {
@@ -372,17 +375,19 @@ class OverlayService : AccessibilityService() {
     }
 
     @Composable
-    private fun SystemVolumeSliders(volumeUpdateTrigger: Int, pauseTimer: () -> Unit, resumeTimer: () -> Unit) {
+    private fun SystemVolumeSliders(overlayViewModel: OverlayViewModel, pauseTimer: () -> Unit, resumeTimer: () -> Unit) {
+        val uiState by overlayViewModel.uiState.collectAsState()
+
         Column(
             modifier = Modifier
                 .fillMaxHeight()
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StreamSliderRow(AudioManager.STREAM_MUSIC, volumeUpdateTrigger, pauseTimer, resumeTimer)
-            StreamSliderRow(AudioManager.STREAM_RING, volumeUpdateTrigger, pauseTimer, resumeTimer)
-            StreamSliderRow(AudioManager.STREAM_ALARM, volumeUpdateTrigger, pauseTimer, resumeTimer)
-            StreamSliderRow(AudioManager.STREAM_VOICE_CALL, volumeUpdateTrigger, pauseTimer, resumeTimer)
+            StreamSliderRow(AudioManager.STREAM_MUSIC, uiState, overlayViewModel, pauseTimer, resumeTimer)
+            StreamSliderRow(AudioManager.STREAM_RING, uiState, overlayViewModel, pauseTimer, resumeTimer)
+            StreamSliderRow(AudioManager.STREAM_ALARM, uiState, overlayViewModel, pauseTimer, resumeTimer)
+            StreamSliderRow(AudioManager.STREAM_VOICE_CALL, uiState, overlayViewModel, pauseTimer, resumeTimer)
         }
     }
 
@@ -429,14 +434,19 @@ class OverlayService : AccessibilityService() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun StreamSliderRow(streamType: Int, triggerChange: Int, pauseTimer: () -> Unit, resumeTimer: () -> Unit) {
-        val maxVolume = remember { try { audioManager.getStreamMaxVolume(streamType) } catch (e: Exception) { 15 } }
-        var currentVolume by remember(triggerChange) { mutableIntStateOf(try { audioManager.getStreamVolume(streamType) } catch (e: Exception) { 0 }) }
+    private fun StreamSliderRow(
+        streamType: Int,
+        uiState: SystemAudioUiState,
+        overlayViewModel: OverlayViewModel,
+        pauseTimer: () -> Unit,
+        resumeTimer: () -> Unit
+    ) {
+        val maxVolume = uiState.maxVolumes[streamType] ?: 15
+        var currentVolume by remember(uiState.volumes[streamType]) { mutableIntStateOf(uiState.volumes[streamType] ?: 0) }
         val interactionSource = remember { MutableInteractionSource() }
-        val isMuted by remember(triggerChange) { mutableStateOf(audioManager.isStreamMute(streamType)) }
-        val ringerMode by remember(triggerChange) { mutableIntStateOf(audioManager.ringerMode) }
+        val isMuted = uiState.mutedStreams.contains(streamType)
+        val ringerMode = uiState.ringerMode
 
         val initialLastVolume = remember(streamType) {
             if (currentVolume > 0) currentVolume else (maxVolume * 0.7).toInt().coerceAtLeast(1)
@@ -474,32 +484,28 @@ class OverlayService : AccessibilityService() {
                         icon = Icons.Default.Vibration
                         sliderEnabled = false
                         onIconClick = {
-                            manager.setRingerMode(AudioManager.RINGER_MODE_SILENT)
-                            volumeUpdateTrigger++
+                            overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_SILENT)
                         }
                     }
                     AudioManager.RINGER_MODE_SILENT -> {
                         icon = Icons.Default.NotificationsOff
                         sliderEnabled = false
                         onIconClick = {
-                            manager.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
-                            volumeUpdateTrigger++
+                            overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
                         }
                     }
                     else -> { // RINGER_MODE_NORMAL
                         icon = Icons.Default.RingVolume
                         sliderEnabled = true
                         onIconClick = {
-                            manager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
-                            volumeUpdateTrigger++
+                            overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
                         }
                     }
                 }
             }
             AudioManager.STREAM_MUSIC -> {
                 name = "Media"
-                val deviceType by remember(triggerChange) { mutableIntStateOf(getMediaOutputDeviceType()) }
-                val baseIcon = when (deviceType) {
+                val baseIcon = when (uiState.deviceType) {
                     AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> Icons.Default.BluetoothAudio
                     AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> Icons.Default.Headphones
                     else -> Icons.AutoMirrored.Filled.VolumeUp
@@ -508,8 +514,7 @@ class OverlayService : AccessibilityService() {
                 sliderEnabled = true
                 onIconClick = {
                     val direction = if (isMuted) AudioManager.ADJUST_UNMUTE else AudioManager.ADJUST_MUTE
-                    audioManager.adjustStreamVolume(streamType, direction, 0)
-                    volumeUpdateTrigger++
+                    overlayViewModel.adjustStreamVolume(streamType, direction)
                 }
             }
             AudioManager.STREAM_ALARM -> {
@@ -524,8 +529,7 @@ class OverlayService : AccessibilityService() {
                 icon = if (isMuted) Icons.Default.PhoneDisabled else Icons.Default.Phone
                 onIconClick = {
                     val direction = if (isMuted) AudioManager.ADJUST_UNMUTE else AudioManager.ADJUST_MUTE
-                    audioManager.adjustStreamVolume(streamType, direction, 0)
-                    volumeUpdateTrigger++
+                    overlayViewModel.adjustStreamVolume(streamType, direction)
                 }
             }
         }
@@ -571,20 +575,19 @@ class OverlayService : AccessibilityService() {
                     try {
                         if (streamType == AudioManager.STREAM_RING) {
                             if (currentVolume == 0) {
-                                manager.setRingerMode(AudioManager.RINGER_MODE_SILENT)
+                                overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_SILENT)
                             } else {
-                                audioManager.setStreamVolume(streamType, currentVolume, 0)
-                                if (audioManager.ringerMode != AudioManager.RINGER_MODE_NORMAL) {
-                                    manager.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
+                                overlayViewModel.setStreamVolume(streamType, currentVolume)
+                                if (uiState.ringerMode != AudioManager.RINGER_MODE_NORMAL) {
+                                    overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
                                 }
                             }
                         } else {
                             if (sliderEnabled) {
-                                audioManager.setStreamVolume(streamType, currentVolume, 0)
+                                overlayViewModel.setStreamVolume(streamType, currentVolume)
                             }
                         }
                     } catch (e: Exception) { Log.e(TAG, "onValueChangeFinished failed", e) }
-                    volumeUpdateTrigger++
                     resumeTimer()
                 },
                 interactionSource = interactionSource,
@@ -686,10 +689,11 @@ class OverlayService : AccessibilityService() {
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(systemStateReceiver)
         view?.let { windowManager.removeView(it) }
         serviceScope.cancel()
     }
+
+
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
     override fun onInterrupt() {}
@@ -703,7 +707,6 @@ private class ServiceLifecycleOwner : SavedStateRegistryOwner {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
     }
     fun resume() { lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME) }
-    fun destroy() { lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY) }
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
     override val lifecycle: Lifecycle get() = lifecycleRegistry
 }

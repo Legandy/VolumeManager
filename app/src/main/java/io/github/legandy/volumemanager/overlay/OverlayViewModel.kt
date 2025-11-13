@@ -113,4 +113,5 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
         super.onCleared()
         getApplication<Application>().unregisterReceiver(audioStateReceiver)
     }
+
 }
