@@ -314,7 +314,8 @@ fun OverlaySettingsTab(settingsDataStore: SettingsDataStore) {
                         title = "Close on Back Gesture",
                         subtitle = "Hide the overlay with the back button or gesture",
                         checked = closeOnBack,
-                        enabled = overlayTimeout != 0, // Only enabled if timeout is not disabled
+                        enabled = true,
+                        //enabled = overlayTimeout != 0, // Only enabled if timeout is not disabled
                         onCheckedChange = {
                             scope.launch {
                                 settingsDataStore.setCloseOverlayOnBack(it)

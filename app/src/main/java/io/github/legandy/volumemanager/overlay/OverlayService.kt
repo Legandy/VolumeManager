@@ -220,11 +220,13 @@ class OverlayService : AccessibilityService() {
 
     private fun resumeIdleTimer() {
         idleJob?.cancel()
-        idleJob = serviceScope.launch {
-            delay(cachedTimeout.toLong())
-            hideView()
+        if (cachedTimeout > 0) { // Only start timer if timeout is greater than 0
+            idleJob = serviceScope.launch {
+                delay(cachedTimeout.toLong())
+                hideView()
+            }
         }
-        Log.d(TAG, "Idle timer resumed.")
+        Log.d(TAG, "Idle timer resumed. Timeout: $cachedTimeout")
     }
 
     private fun resetIdleTimer() {
@@ -712,7 +714,7 @@ class OverlayService : AccessibilityService() {
 private class ServiceLifecycleOwner : SavedStateRegistryOwner, ViewModelStoreOwner {
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
-    private val _viewModelStore = ViewModelStore() // Renamed to avoid hiding
+    private val _viewModelStore = ViewModelStore()
     init {
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
@@ -720,7 +722,7 @@ private class ServiceLifecycleOwner : SavedStateRegistryOwner, ViewModelStoreOwn
     fun resume() { lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME) }
     fun destroy() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        _viewModelStore.clear() // Use the renamed property
+        _viewModelStore.clear()
     }
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
     override val lifecycle: Lifecycle get() = lifecycleRegistry

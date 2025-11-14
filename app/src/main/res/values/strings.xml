@@ -1,8 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    //MainActivity
+
+    //SettingsComponents
+
+    //OverlayService
+
+    //ShortcutActivity
+
+    //AppSettingsActivity
+
+    //AboutActivity
+
+
+
+    //Unsorted
     <string name="app_name">Volume Manager</string>
     <string name="app_settings_label">App Settings</string>
-
     <string name="show_overlay_short">Show Overlay</string>
     <string name="show_overlay_long">Show Volume Overlay</string>
     <string name="hide_overlay_short">Hide Overlay</string>
