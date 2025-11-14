@@ -285,7 +285,6 @@ fun OverlaySettingsTab(settingsDataStore: SettingsDataStore) {
 
     var showTimeoutDialog by remember { mutableStateOf(false) }
 
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -314,7 +313,8 @@ fun OverlaySettingsTab(settingsDataStore: SettingsDataStore) {
                     SettingSwitch(
                         title = "Close on Back Gesture",
                         subtitle = "Hide the overlay with the back button or gesture",
-                        checked = closeOnBack,
+                        checked = closeOnBack, // Now always reflects the actual state
+                        enabled = true, // Always enabled
                         onCheckedChange = {
                             scope.launch {
                                 settingsDataStore.setCloseOverlayOnBack(it)
@@ -394,7 +394,7 @@ private fun TimeoutSelectionSlider(
                     }
                 )
                 Text(
-                    text = "Slide to select how long the overlay remains visible.",
+                    text = "Slide to select how long the overlay remains visible. Set to Disabled for indefinite display.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
