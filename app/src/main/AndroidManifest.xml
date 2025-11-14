@@ -32,7 +32,7 @@
         </activity>
 
         <activity
-            android:name=".settings.ui.AppSettingsActivity"
+            android:name=".appsettings.AppSettingsActivity"
             android:exported="false"
             android:label="@string/app_settings_label"
             android:theme="@style/Theme.VolumeManager" />

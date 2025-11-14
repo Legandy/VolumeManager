@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.legandy.volumemanager.R
+import io.github.legandy.volumemanager.appsettings.AppSettingsActivity
 import io.github.legandy.volumemanager.core.Manager
 import io.github.legandy.volumemanager.settings.AppFilterMode
 import io.github.legandy.volumemanager.settings.InstalledAppData
