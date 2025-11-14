@@ -15,3 +15,8 @@
 local.properties
 keystore.jks
 /.idea/
+/Overview.md
+/ToDo.md
+/.kotlin/
+/.idea/
+/.continue/
