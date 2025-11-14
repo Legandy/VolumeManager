@@ -324,7 +324,7 @@ fun OverlaySettingsTab(settingsDataStore: SettingsDataStore) {
                     SettingClickableItem(
                         title = "Overlay Timeout",
                         subtitle = when (overlayTimeout.toLong()) {
-                            0L -> "Never"
+                            0L -> "Disabled"
                             else -> "${overlayTimeout.toLong() / 1000L} seconds"
                         },
                         onClick = { showTimeoutDialog = true },
@@ -355,20 +355,7 @@ private fun TimeoutSelectionSlider(
     onDismissRequest: () -> Unit,
     onTimeoutSelected: (Long) -> Unit
 ) {
-    val timeoutOptions: List<Pair<Long, String>> = remember {
-        listOf(
-            0L to "Never",
-            5000L to "5 seconds",
-            10000L to "10 seconds",
-            30000L to "30 seconds"
-        )
-    }
-
-    // Determine initial slider position based on currentTimeout
-    var sliderPosition by remember {
-        val initialIndex = timeoutOptions.indexOfFirst { it.first == currentTimeout }.toFloat()
-        mutableFloatStateOf(initialIndex.coerceAtLeast(0f)) // Ensure it's not -1 if not found
-    }
+    var sliderPosition by remember { mutableFloatStateOf(currentTimeout.toFloat()) }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -385,8 +372,13 @@ private fun TimeoutSelectionSlider(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = "Timeout", style = MaterialTheme.typography.bodyLarge)
+                    val timeoutText = if (sliderPosition.toLong() == 0L) {
+                        "Disabled"
+                    } else {
+                        "${sliderPosition.toLong() / 1000L} seconds"
+                    }
                     Text(
-                        text = timeoutOptions[sliderPosition.toInt()].second,
+                        text = timeoutText,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -395,11 +387,10 @@ private fun TimeoutSelectionSlider(
                 Slider(
                     value = sliderPosition,
                     onValueChange = { newPosition -> sliderPosition = newPosition },
-                    valueRange = 0f..(timeoutOptions.size - 1).toFloat(),
-                    steps = timeoutOptions.size - 2,
+                    valueRange = 0f..30000f, // 0 to 30 seconds in milliseconds
+                    steps = 29, // 30 distinct values (0s to 30s) means 29 steps
                     onValueChangeFinished = {
-                        val selectedTimeout = timeoutOptions[sliderPosition.toInt()].first
-                        onTimeoutSelected(selectedTimeout)
+                        onTimeoutSelected(sliderPosition.toLong())
                     }
                 )
                 Text(
