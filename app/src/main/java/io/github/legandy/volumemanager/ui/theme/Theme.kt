@@ -10,7 +10,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import io.github.legandy.volumemanager.app.MyApplication
+import io.github.legandy.volumemanager.core.MyApplication
 import io.github.legandy.volumemanager.settings.ThemeMode
 
 val VolumeManagerTypography = Typography(

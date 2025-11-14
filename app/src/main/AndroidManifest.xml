@@ -11,7 +11,7 @@
         tools:ignore="QueryAllPackagesPermission" />
 
     <application
-        android:name=".app.MyApplication"
+        android:name=".core.MyApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
@@ -22,7 +22,7 @@
         tools:targetApi="34">
 
         <activity
-            android:name=".app.MainActivity"
+            android:name=".main.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.VolumeManager">
             <intent-filter>
@@ -32,7 +32,7 @@
         </activity>
 
         <activity
-            android:name=".appsettings.AppSettingsActivity"
+            android:name=".app.AppSettingsActivity"
             android:exported="false"
             android:label="@string/app_settings_label"
             android:theme="@style/Theme.VolumeManager" />
@@ -76,7 +76,8 @@
 
         <receiver
             android:name=".actions.ActionReceiver"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="io.github.legandy.volumemanager.action.SHOW_OVERLAY" />
                 <action android:name="io.github.legandy.volumemanager.action.HIDE_OVERLAY" />

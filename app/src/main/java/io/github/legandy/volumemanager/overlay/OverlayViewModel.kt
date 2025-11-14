@@ -10,7 +10,7 @@ import android.media.AudioManager
 import android.app.NotificationManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.core.content.ContextCompat
-import io.github.legandy.volumemanager.app.MyApplication
+import io.github.legandy.volumemanager.core.MyApplication
 import io.github.legandy.volumemanager.core.Manager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

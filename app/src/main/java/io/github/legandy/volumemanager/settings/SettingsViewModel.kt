@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import io.github.legandy.volumemanager.app.MyApplication
+import io.github.legandy.volumemanager.core.MyApplication
 
 data class AppFilterUiState(
     val isLoading: Boolean = true,

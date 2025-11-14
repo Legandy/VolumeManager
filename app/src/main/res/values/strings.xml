@@ -2,6 +2,57 @@
 <resources>
 
     //MainActivity
+        <!-- App Name -->
+        <string name="app_name">Volume Manager</string>
+
+        <!-- Onboarding Flow -->
+        <string name="onboarding_setup_title">Volume Manager Setup</string>
+
+        <!-- Welcome Screen -->
+        <string name="welcome_title">Welcome to Volume Manager!</string>
+        <string name="welcome_description">Easily control app volumes and more.</string>
+        <string name="welcome_get_started_button">Get Started</string>
+
+        <!-- Shizuku Permission Screen -->
+        <string name="shizuku_permission_title">Shizuku Permission Required</string>
+        <string name="shizuku_permission_description">Shizuku permission is essential for per-app audio control. Without it, the app cannot function.</string>
+        <string name="shizuku_card_title">Shizuku Permission</string>
+        <string name="shizuku_card_description">For per-app audio control.</string>
+        <string name="shizuku_grant_button">Grant Shizuku Permission</string>
+        <string name="shizuku_next_button">Next</string>
+
+        <!-- Accessibility Permission Screen -->
+        <string name="accessibility_service_title">Accessibility Service</string>
+        <string name="accessibility_service_description">Enable the Accessibility Service to show the volume overlay and interact with app-specific volume controls.</string>
+        <string name="accessibility_card_title">Accessibility Service</string>
+        <string name="accessibility_card_description">To show the volume overlay.</string>
+        <string name="accessibility_enable_button">Enable Accessibility Service</string>
+        <string name="permission_skip_for_now_button">Skip for now</string>
+
+        <!-- Notification Permission Screen -->
+        <string name="notification_access_title">Notification Access</string>
+        <string name="notification_access_description">Grant Notification Access to allow VolumeManager to change Ringer Mode &amp; Do Not Disturb settings.</string>
+        <string name="notification_card_title">Notification Access</string>
+        <string name="notification_card_description">To change Ringer Mode &amp; DND.</string>
+        <string name="notification_grant_button">Grant Notification Access</string>
+
+        <!-- Bluetooth Permission Screen -->
+        <string name="bluetooth_permission_title">Bluetooth Permission</string>
+        <string name="bluetooth_permission_description">Grant Bluetooth permission to enable detection of Bluetooth audio devices for specific volume profiles.</string>
+        <string name="bluetooth_card_title">Bluetooth Permission</string>
+        <string name="bluetooth_card_description">To detect Bluetooth devices.</string>
+        <string name="bluetooth_grant_button">Grant Bluetooth Permission</string>
+        <string name="bluetooth_finish_button">Finish</string>
+
+        <!-- Onboarding Complete Screen -->
+        <string name="onboarding_complete_title">You\'re All Set!</string>
+        <string name="onboarding_complete_description">VolumeManager is now ready to use. You can change optional permissions later in settings.</string>
+        <string name="onboarding_complete_go_to_app_button">Go to App</string>
+
+        <!-- Status Card Content Descriptions (for icons) -->
+        <string name="status_icon_granted">Permission granted</string>
+        <string name="status_icon_not_granted">Permission not granted</string>
+
 
     //SettingsComponents
 
@@ -9,7 +60,15 @@
 
     //ShortcutActivity
 
+
     //AppSettingsActivity
+    <string name="show_setup_onboarding_content_description">Show Setup and Onboarding</string>
+    <string name="setting_theme_mode_title">Theme Mode</string>
+    <string name="theme_system_default">System Default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="select_theme_dialog_title">Select Theme</string>
+    <string name="dialog_cancel_button">Cancel</string>
 
 
     //AboutActivity
@@ -17,7 +76,6 @@
 
 
     //Unsorted
-    <string name="app_name">Volume Manager</string>
     <string name="app_settings_label">App Settings</string>
     <string name="show_overlay_short">Show Overlay</string>
     <string name="show_overlay_long">Show Volume Overlay</string>
@@ -27,10 +85,11 @@
     <string name="toggle_overlay_long">Toggle Volume Overlay</string>
     <string name="shortcut_disabled">Shortcut is disabled</string>
     <string name="enable_accessibility_message">Please enable the Accessibility setting to allow the overlay.</string>
-    <string name="accessibility_service_description">Volume overlay service to control per-app audio</string>
     <string name="unknown_action">Unknown shortcut action.</string>
     <string name="create_shortcut_label">Volume Control Shortcut</string>
     <string name="no_active_audio_title">No Active Audio</string>
     <string name="no_active_audio_description">Start playing media to control individual app volumes.</string>
+
+
 
 </resources>

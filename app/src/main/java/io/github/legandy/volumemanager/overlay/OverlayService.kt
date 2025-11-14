@@ -100,8 +100,8 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import io.github.legandy.volumemanager.app.MainActivity
-import io.github.legandy.volumemanager.app.MyApplication
+import io.github.legandy.volumemanager.main.MainActivity
+import io.github.legandy.volumemanager.core.MyApplication
 import io.github.legandy.volumemanager.core.Manager
 import io.github.legandy.volumemanager.settings.AppFilterMode
 import io.github.legandy.volumemanager.settings.SettingsDataStore

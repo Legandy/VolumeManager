@@ -1,4 +1,4 @@
-package io.github.legandy.volumemanager.appsettings
+package io.github.legandy.volumemanager.app
 
 import android.content.Context
 import androidx.datastore.core.DataStore
