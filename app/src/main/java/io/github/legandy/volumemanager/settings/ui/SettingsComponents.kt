@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.automirrored.outlined.VolumeOff
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -39,7 +40,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -313,8 +313,8 @@ fun OverlaySettingsTab(settingsDataStore: SettingsDataStore) {
                     SettingSwitch(
                         title = "Close on Back Gesture",
                         subtitle = "Hide the overlay with the back button or gesture",
-                        checked = closeOnBack, // Now always reflects the actual state
-                        enabled = true, // Always enabled
+                        checked = closeOnBack,
+                        enabled = overlayTimeout != 0, // Only enabled if timeout is not disabled
                         onCheckedChange = {
                             scope.launch {
                                 settingsDataStore.setCloseOverlayOnBack(it)
@@ -343,7 +343,6 @@ fun OverlaySettingsTab(settingsDataStore: SettingsDataStore) {
                 scope.launch {
                     settingsDataStore.setOverlayTimeout(newTimeout.toInt())
                 }
-                showTimeoutDialog = false
             }
         )
     }
@@ -390,6 +389,8 @@ private fun TimeoutSelectionSlider(
                     valueRange = 0f..30000f, // 0 to 30 seconds in milliseconds
                     steps = 29, // 30 distinct values (0s to 30s) means 29 steps
                     onValueChangeFinished = {
+                        // The selection is now confirmed by the confirm button, not by releasing the slider.
+                        // However, we still want to update the value for the display in real-time.
                         onTimeoutSelected(sliderPosition.toLong())
                     }
                 )
@@ -401,8 +402,11 @@ private fun TimeoutSelectionSlider(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text("Close")
+            IconButton(onClick = {
+                onTimeoutSelected(sliderPosition.toLong())
+                onDismissRequest()
+            }) {
+                Icon(Icons.Default.Check, contentDescription = "Confirm Timeout")
             }
         }
     )
