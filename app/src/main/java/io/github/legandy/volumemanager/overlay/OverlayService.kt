@@ -220,7 +220,7 @@ class OverlayService : AccessibilityService() {
 
     private fun resumeIdleTimer() {
         idleJob?.cancel()
-        if (cachedTimeout > 0) { // Only start timer if timeout is greater than 0
+        if (cachedTimeout > 0) {
             idleJob = serviceScope.launch {
                 delay(cachedTimeout.toLong())
                 hideView()
@@ -726,5 +726,5 @@ private class ServiceLifecycleOwner : SavedStateRegistryOwner, ViewModelStoreOwn
     }
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
     override val lifecycle: Lifecycle get() = lifecycleRegistry
-    override val viewModelStore: ViewModelStore get() = _viewModelStore // Override the getter to return the internal property
+    override val viewModelStore: ViewModelStore get() = _viewModelStore
 }

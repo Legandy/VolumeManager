@@ -81,7 +81,7 @@ class ShortcutActivity : ComponentActivity() {
         val shortcutIntent = Intent(applicationContext, ShortcutProxyActivity::class.java).apply {
             action = info.action
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            addCategory(Intent.CATEGORY_DEFAULT) // Ensure default category is added for implicit resolution
+            addCategory(Intent.CATEGORY_DEFAULT)
         }
 
         val resultIntent = Intent().apply {

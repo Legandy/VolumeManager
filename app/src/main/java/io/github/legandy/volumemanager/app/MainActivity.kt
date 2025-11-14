@@ -178,7 +178,7 @@ class MainActivity : ComponentActivity() {
                     description = "To change Ringer Mode & DND.",
                     granted = hasNotificationAccess
                 )
-                // New Status Card for Bluetooth
+
                 StatusCard(
                     title = "Bluetooth Permission",
                     description = "To detect Bluetooth devices.",

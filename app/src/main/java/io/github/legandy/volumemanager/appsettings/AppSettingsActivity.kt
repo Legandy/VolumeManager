@@ -1,6 +1,5 @@
 package io.github.legandy.volumemanager.appsettings
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,7 +45,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.emptyPreferences
 import io.github.legandy.volumemanager.settings.ui.SettingClickableItem
 import kotlinx.coroutines.flow.Flow
-import io.github.legandy.volumemanager.appsettings.appSettingsDataStore
 
 
 class AppSettingsActivity : ComponentActivity() {

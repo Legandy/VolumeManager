@@ -387,11 +387,10 @@ private fun TimeoutSelectionSlider(
                 Slider(
                     value = sliderPosition,
                     onValueChange = { newPosition -> sliderPosition = newPosition },
-                    valueRange = 0f..30000f, // 0 to 30 seconds in milliseconds
-                    steps = 29, // 30 distinct values (0s to 30s) means 29 steps
+                    valueRange = 0f..30000f,
+                    steps = 29,
                     onValueChangeFinished = {
-                        // The selection is now confirmed by the confirm button, not by releasing the slider.
-                        // However, we still want to update the value for the display in real-time.
+
                         onTimeoutSelected(sliderPosition.toLong())
                     }
                 )
