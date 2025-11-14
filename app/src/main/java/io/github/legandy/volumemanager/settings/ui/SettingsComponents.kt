@@ -69,7 +69,6 @@ import io.github.legandy.volumemanager.settings.AppFilterMode
 import io.github.legandy.volumemanager.settings.InstalledAppData
 import io.github.legandy.volumemanager.settings.SettingsDataStore
 import io.github.legandy.volumemanager.settings.SettingsViewModel
-import io.github.legandy.volumemanager.settings.ui.AppSettingsActivity
 import kotlinx.coroutines.launch
 
 @Composable
@@ -141,42 +140,6 @@ fun SettingClickableItem(
         if (showDivider) {
             HorizontalDivider()
         }
-    }
-}
-
-@Composable
-fun SettingSlider(
-    modifier: Modifier = Modifier,
-    title: String,
-    value: Float,
-    onValueChange: (Float) -> Unit,
-    onValueChangeFinished: () -> Unit,
-    range: ClosedFloatingPointRange<Float> = 0f..1f,
-    steps: Int = 0,
-    valueLabel: @Composable (Float) -> Unit = { Text("${(it * 100).toInt()}%") },
-    subtitle: String? = null,
-    enabled: Boolean = true
-) {
-    Column(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                subtitle?.let {
-                    Spacer(Modifier.height(4.dp))
-                    Text(it, style = MaterialTheme.typography.bodySmall)
-                }
-            }
-            Spacer(Modifier.width(12.dp))
-            valueLabel(value)
-        }
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = range,
-            steps = steps,
-            enabled = enabled,
-            onValueChangeFinished = onValueChangeFinished
-        )
     }
 }
 
