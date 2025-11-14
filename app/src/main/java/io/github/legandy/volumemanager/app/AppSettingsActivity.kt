@@ -1,6 +1,7 @@
 package io.github.legandy.volumemanager.app
 
 import android.app.Application
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,6 +18,7 @@ import io.github.legandy.volumemanager.core.MyApplication
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import io.github.legandy.volumemanager.main.MainActivity // Import MainActivity
 
 class AppSettingsActivity : ComponentActivity() {
 
@@ -43,7 +45,14 @@ class AppSettingsActivity : ComponentActivity() {
 
                     AppSettingsScreen(
                         uiState = uiState,
-                        onShowSetupRequested = { finish() },
+                        onShowSetupRequested = { 
+                            val intent = Intent(this, MainActivity::class.java).apply {
+                                putExtra("EXTRA_RESTART_ONBOARDING", true)
+                                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            startActivity(intent)
+                            finish() 
+                        },
                         onThemeSettingClick = { appSettingsViewModel.showThemeSelectionDialog(true) },
                         onThemeSelected = { newTheme -> appSettingsViewModel.selectThemeMode(newTheme) },
                         onDismissThemeDialog = { appSettingsViewModel.showThemeSelectionDialog(false) }
@@ -53,7 +62,6 @@ class AppSettingsActivity : ComponentActivity() {
         }
     }
 }
-
 
 
 class AppSettingsViewModelFactory(private val application: Application, private val settingsDataStore: SettingsDataStore) : ViewModelProvider.Factory {

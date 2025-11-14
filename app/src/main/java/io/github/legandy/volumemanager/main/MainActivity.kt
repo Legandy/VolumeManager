@@ -26,6 +26,11 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        if (intent?.getBooleanExtra("EXTRA_RESTART_ONBOARDING", false) == true) {
+            mainViewModel.requestOnboardingRestart()
+            intent?.removeExtra("EXTRA_RESTART_ONBOARDING") // Clear the extra
+        }
+
         enableEdgeToEdge()
         setContent {
             val isLaunchedFromLauncher = remember { // Moved remember block here

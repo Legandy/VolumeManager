@@ -20,6 +20,8 @@
         <string name="shizuku_card_description">For per-app audio control.</string>
         <string name="shizuku_grant_button">Grant Shizuku Permission</string>
         <string name="shizuku_next_button">Next</string>
+        <string name="shizuku_waiting_title">Waiting for Shizuku…</string>
+        <string name="shizuku_waiting_message">Please grant Shizuku permission in the app that just opened.</string>
 
         <!-- Accessibility Permission Screen -->
         <string name="accessibility_service_title">Accessibility Service</string>

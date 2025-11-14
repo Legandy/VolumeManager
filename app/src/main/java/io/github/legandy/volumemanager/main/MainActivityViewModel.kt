@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.snapshotFlow
-import android.provider.Settings // Added this import
 
 class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
 
