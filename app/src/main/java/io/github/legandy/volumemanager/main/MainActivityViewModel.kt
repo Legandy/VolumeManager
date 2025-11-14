@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import io.github.legandy.volumemanager.core.Manager
 import io.github.legandy.volumemanager.core.MyApplication
@@ -18,12 +19,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.snapshotFlow
 
-class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
+class MainActivityViewModel(application: Application, private val savedStateHandle: SavedStateHandle) : AndroidViewModel(application) {
 
     private val manager: Manager = MyApplication.manager
 
+    // Keys for SavedStateHandle
+    private val CURRENT_ONBOARDING_STEP_KEY = "currentOnboardingStep"
+    private val IS_ONBOARDING_COMPLETED_KEY = "isOnboardingCompleted"
+
     // UI State
-    private val _uiState = MutableStateFlow(MainUiState())
+    private val _uiState = MutableStateFlow(
+        MainUiState(
+            currentOnboardingStep = savedStateHandle.get<OnboardingStep>(CURRENT_ONBOARDING_STEP_KEY) ?: OnboardingStep.Welcome,
+            isOnboardingCompleted = savedStateHandle.get<Boolean>(IS_ONBOARDING_COMPLETED_KEY) ?: false
+        )
+    )
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     init {
@@ -78,10 +88,12 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
 
     fun navigateToOnboardingStep(newStep: OnboardingStep) {
         _uiState.value = _uiState.value.copy(currentOnboardingStep = newStep)
+        savedStateHandle[CURRENT_ONBOARDING_STEP_KEY] = newStep
     }
 
     fun completeOnboarding() {
         _uiState.value = _uiState.value.copy(isOnboardingCompleted = true)
+        savedStateHandle[IS_ONBOARDING_COMPLETED_KEY] = true
         // In a real app, you'd save this preference to DataStore here
         // For now, it's just in-memory state
     }
@@ -98,6 +110,8 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
             isOnboardingCompleted = false,
             currentOnboardingStep = OnboardingStep.Welcome
         )
+        savedStateHandle[IS_ONBOARDING_COMPLETED_KEY] = false
+        savedStateHandle[CURRENT_ONBOARDING_STEP_KEY] = OnboardingStep.Welcome
     }
 
     // This data class represents all the UI state for MainActivity
