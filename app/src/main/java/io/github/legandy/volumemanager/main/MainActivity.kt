@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                     onNavigateToOnboardingStep = mainViewModel::navigateToOnboardingStep,
                     onOnboardingComplete = mainViewModel::completeOnboarding,
                     onOnboardingRestartHandled = mainViewModel::onboardingRestartHandled,
-                    onRequestOnboardingRestart = mainViewModel::requestOnboardingRestart,
+                    viewModel = mainViewModel
                 )
             }
         }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.snapshotFlow
+import android.provider.Settings // Added this import
 
 class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -28,7 +29,7 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
 
     init {
         // Initial state checks
-        checkPermissionsAndRefreshState()
+        onActivityResume() // Call the new function for initial state setup
 
         // Observe Shizuku readiness
         viewModelScope.launch {
@@ -37,7 +38,7 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
                 if (isReady && !_uiState.value.shizukuPermission) {
                     // If Shizuku becomes ready, but permission wasn't granted yet, refresh state.
                     // The actual permission request is triggered by the Activity.
-                    checkPermissionsAndRefreshState()
+                    onActivityResume() // Use the new function here as well
                 }
             }
         }
@@ -48,14 +49,23 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    fun checkPermissionsAndRefreshState() {
+    // Renamed and refactored from checkPermissionsAndRefreshState
+    fun onActivityResume() {
         _uiState.value = _uiState.value.copy(
             isAccessibilityEnabled = isAccessibilityServiceEnabled(getApplication()),
             hasNotificationAccess = checkNotificationAccess(),
             hasBluetoothPermission = checkBluetoothPermission(),
-            // Ensure shizukuReady and shizukuPermission are also up-to-date
-            hasShizukuReady = manager.shizukuReady,
+            hasShizukuReady = manager.shizukuReady, // Ensure shizukuReady and shizukuPermission are also up-to-date
             shizukuPermission = manager.shizukuPermission
+        )
+    }
+
+    // New function to specifically refresh dynamic statuses without affecting onboarding step
+    fun onRefreshStatus() {
+        _uiState.value = _uiState.value.copy(
+            isAccessibilityEnabled = isAccessibilityServiceEnabled(getApplication()),
+            hasNotificationAccess = checkNotificationAccess(),
+            hasBluetoothPermission = checkBluetoothPermission()
         )
     }
 
@@ -82,8 +92,13 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun onboardingRestartHandled() {
-        _uiState.value = _uiState.value.copy(forceOnboardingRestart = false)
-        _uiState.value = _uiState.value.copy(currentOnboardingStep = OnboardingStep.Welcome)
+        // This function should only be called when a deliberate restart is requested
+        // and needs to reset everything for a fresh start of onboarding.
+        _uiState.value = _uiState.value.copy(
+            forceOnboardingRestart = false,
+            isOnboardingCompleted = false,
+            currentOnboardingStep = OnboardingStep.Welcome
+        )
     }
 
     // This data class represents all the UI state for MainActivity

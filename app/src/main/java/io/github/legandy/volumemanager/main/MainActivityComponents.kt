@@ -60,7 +60,7 @@ fun MainScreen(
     onNavigateToOnboardingStep: (OnboardingStep) -> Unit,
     onOnboardingComplete: () -> Unit,
     onOnboardingRestartHandled: () -> Unit,
-    onRequestOnboardingRestart: () -> Unit,
+    viewModel: MainActivityViewModel // Added ViewModel here
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -69,14 +69,15 @@ fun MainScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         // Update ViewModel after permission result
-        onRequestOnboardingRestart() // Trigger ViewModel to check permissions again
+        viewModel.onActivityResume() // Trigger ViewModel to check permissions again, without resetting onboarding step
     }
 
     // Lifecycle observer to refresh state on resume
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                onRequestOnboardingRestart() // This is a general refresh call, not just for onboarding restart
+                viewModel.onActivityResume() // New function to handle general activity resume logic
+                viewModel.onRefreshStatus() // Specifically for refreshing accessibility and other dynamic statuses
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
