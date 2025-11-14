@@ -1,5 +1,6 @@
 package io.github.legandy.volumemanager.actions
 
+import android.app.Activity
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import io.github.legandy.volumemanager.R
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 
 
@@ -74,27 +76,46 @@ class ShortcutActivity : ComponentActivity() {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun createShortcut(info: ShortcutInfo) {
-        val shortcutIntent = Intent(info.action).apply {
-            setClass(applicationContext, ShortcutProxyActivity::class.java)
+        val shortcutIntent = Intent(applicationContext, ShortcutProxyActivity::class.java).apply {
+            action = info.action
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addCategory(Intent.CATEGORY_DEFAULT) // Ensure default category is added for implicit resolution
         }
-
-        val pendingIntent = PendingIntent.getActivity(
-            applicationContext,
-            0,
-            shortcutIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
 
         val resultIntent = Intent().apply {
-            putExtra(Intent.EXTRA_SHORTCUT_INTENT, pendingIntent)
             putExtra(Intent.EXTRA_SHORTCUT_NAME, info.label)
+
+            // Check if the calling app requests a PendingIntent (modern approach)
+            val requestPendingIntent = intent.getBooleanExtra(EXTRA_REQUEST_PENDING_INTENT, false)
+
+            if (requestPendingIntent) {
+                // Modern approach: Return a PendingIntent
+                val pendingIntent = PendingIntent.getActivity(
+                    applicationContext,
+                    0, // Request code, can be unique if needed
+                    shortcutIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                putExtra(Intent.EXTRA_SHORTCUT_INTENT, pendingIntent)
+            } else {
+                // Deprecated/Old approach: Return a direct Intent for compatibility with older apps/launchers
+                putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
+            }
+
+            // Include icon resource for compatibility with older launchers/apps
+            putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+                Intent.ShortcutIconResource.fromContext(applicationContext, R.mipmap.ic_launcher))
         }
 
-        setResult(RESULT_OK, resultIntent)
+        setResult(Activity.RESULT_OK, resultIntent)
         finish()
     }
 
     private data class ShortcutInfo(val label: String, val action: String, val icon: ImageVector)
+
+    companion object {
+        const val EXTRA_REQUEST_PENDING_INTENT = "io.github.legandy.volumemanager.extra.REQUEST_PENDING_INTENT"
+    }
 }
