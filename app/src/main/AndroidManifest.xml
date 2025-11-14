@@ -9,7 +9,6 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
-    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
     <application
         android:name=".app.MyApplication"
@@ -48,7 +47,14 @@
             android:exported="true"
             android:theme="@style/Theme.VolumeManager.Transparent"
             android:taskAffinity=""
-            android:excludeFromRecents="true" />
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="io.github.legandy.volumemanager.action.SHOW_OVERLAY" />
+                <action android:name="io.github.legandy.volumemanager.action.HIDE_OVERLAY" />
+                <action android:name="io.github.legandy.volumemanager.action.TOGGLE_OVERLAY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name=".overlay.OverlayService"

@@ -1,5 +1,6 @@
 package io.github.legandy.volumemanager.actions
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,11 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import io.github.legandy.volumemanager.R
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
-import androidx.core.content.pm.ShortcutInfoCompat
-import androidx.core.content.pm.ShortcutManagerCompat
-import androidx.core.graphics.drawable.IconCompat
+
 
 class ShortcutActivity : ComponentActivity() {
 
@@ -77,20 +75,24 @@ class ShortcutActivity : ComponentActivity() {
     }
 
     private fun createShortcut(info: ShortcutInfo) {
-        val shortcutIntent = Intent(this, ShortcutProxyActivity::class.java).apply {
-            action = info.action
+        val shortcutIntent = Intent(info.action).apply {
+            setClass(applicationContext, ShortcutProxyActivity::class.java)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        val shortcutInfo = ShortcutInfoCompat.Builder(this, info.label)
-            .setShortLabel(info.label)
-            .setLongLabel(info.label)
-            .setIcon(IconCompat.createWithResource(this, R.mipmap.ic_launcher))
-            .setIntent(shortcutIntent)
-            .build()
+        val pendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            0,
+            shortcutIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
-        ShortcutManagerCompat.requestPinShortcut(this, shortcutInfo, null)
+        val resultIntent = Intent().apply {
+            putExtra(Intent.EXTRA_SHORTCUT_INTENT, pendingIntent)
+            putExtra(Intent.EXTRA_SHORTCUT_NAME, info.label)
+        }
 
-        setResult(RESULT_OK)
+        setResult(RESULT_OK, resultIntent)
         finish()
     }
 
