@@ -32,6 +32,12 @@
         </activity>
 
         <activity
+            android:name=".settings.ui.AppSettingsActivity"
+            android:exported="false"
+            android:label="@string/app_settings_label"
+            android:theme="@style/Theme.VolumeManager" />
+
+        <activity
             android:name=".actions.ShortcutActivity"
             android:exported="true"
             android:label="@string/create_shortcut_label"
