@@ -278,7 +278,7 @@ private fun AppVolumeCardInSettings(
     val colorFilter = if (isMuted) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) else null
 
     Row(
-        modifier = Modifier.fillMaxWidth().height(56.dp),
+        modifier = Modifier.fillMaxWidth().height(72.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -293,13 +293,12 @@ private fun AppVolumeCardInSettings(
                         manager.setAppVolume(app.packageName, 0f)
                     }
                 }
-            },
-            modifier = Modifier.padding(start = 16.dp)
+            }
         ) {
             Image(
                 bitmap = app.icon, // Uses ImageBitmap
                 contentDescription = app.label,
-                modifier = iconModifier.size(24.dp).clip(RoundedCornerShape(4.dp)),
+                modifier = iconModifier.size(40.dp).clip(RoundedCornerShape(8.dp)),
                 colorFilter = colorFilter
             )
         }
@@ -324,7 +323,7 @@ private fun AppVolumeCardInSettings(
             text = "${(app.volume * 100).toInt()}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 16.dp).width(32.dp),
+            modifier = Modifier.width(48.dp),
             textAlign = TextAlign.End
         )
     }
