@@ -301,7 +301,7 @@ class Manager(
                 configs.forEach { cfg ->
                     val pid = try { getClientPidMethod?.invoke(cfg) as? Int } catch (_: Throwable) { null }
                     val pkgName = runningProcesses.find { it.pid == pid }?.processName?.split(":")?.firstOrNull()
-                    Log.d(TAG, "Processing config: clientPid=$pid, pkgName=$pkgName, usage=${cfg.getAudioAttributes().usage}, contentType=${cfg.getAudioAttributes().contentType}, cfgHash=${cfg.hashCode()}")
+                    Log.d(TAG, "Processing config: clientPid=$pid, pkgName=$pkgName, usage=${cfg.audioAttributes.usage}, contentType=${cfg.audioAttributes.contentType}, cfgHash=${cfg.hashCode()}")
 
                     if (pid == null || pkgName == null) {
                         Log.w(TAG, "Could not get pid or package name for config: $cfg")
