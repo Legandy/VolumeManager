@@ -71,6 +71,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,6 +89,7 @@ import io.github.legandy.volumemanager.core.Manager
 import io.github.legandy.volumemanager.settings.AppFilterMode
 import io.github.legandy.volumemanager.settings.SettingsDataStore
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
+import kotlinx.coroutines.launch
 
 private enum class OverlayTab { SYSTEM, APPS }
 
@@ -262,6 +264,8 @@ private fun AppVolumeSliders(manager: Manager, settingsDataStore: SettingsDataSt
     val filterMode by settingsDataStore.appFilterMode.collectAsState(initial = AppFilterMode.SHOW_ALL)
     val blacklist by settingsDataStore.appBlacklist.collectAsState(initial = emptySet())
     val whitelist by settingsDataStore.appWhitelist.collectAsState(initial = emptySet())
+    val lastAppVolumes by settingsDataStore.lastAppVolumes.collectAsState(initial = emptyMap())
+
 
     val activeApps = manager.apps.values
         .filter { it.players.isNotEmpty() }
@@ -294,7 +298,7 @@ private fun AppVolumeSliders(manager: Manager, settingsDataStore: SettingsDataSt
         }
         else {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                activeApps.forEach { app -> AppSliderRow(app = app, manager = manager, pauseTimer = pauseTimer, resumeTimer = resumeTimer) }
+                activeApps.forEach { app -> AppSliderRow(app = app, manager = manager, settingsDataStore = settingsDataStore, lastAppVolumes = lastAppVolumes, pauseTimer = pauseTimer, resumeTimer = resumeTimer) }
             }
         }
     }
@@ -473,14 +477,25 @@ private fun StreamSliderRow(
 }
 
 @Composable
-private fun AppSliderRow(app: Manager.AppState, manager: Manager, pauseTimer: () -> Unit, resumeTimer: () -> Unit) {
+private fun AppSliderRow(
+    app: Manager.AppState,
+    manager: Manager,
+    settingsDataStore: SettingsDataStore,
+    lastAppVolumes: Map<String, Float>,
+    pauseTimer: () -> Unit,
+    resumeTimer: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
-    var lastVolume by remember(app.packageName) { mutableFloatStateOf(if (app.volume > 0.05f) app.volume else 0.7f) }
+    var lastVolume by remember(app.packageName) {
+        mutableFloatStateOf(lastAppVolumes[app.packageName] ?: (if (app.volume > 0.05f) app.volume else 0.7f))
+    }
     val isMuted = app.volume < 0.01f
 
     LaunchedEffect(app.volume) {
         if (app.volume > 0.05f) {
             lastVolume = app.volume
+            scope.launch { settingsDataStore.setLastAppVolume(app.packageName, app.volume) }
         }
     }
 
@@ -504,10 +519,14 @@ private fun AppSliderRow(app: Manager.AppState, manager: Manager, pauseTimer: ()
     ) {
         IconButton(
             onClick = {
-                if (isMuted) {
-                    manager.setAppVolume(app.packageName, lastVolume)
-                } else {
-                    manager.setAppVolume(app.packageName, 0f)
+                scope.launch {
+                    if (isMuted) {
+                        manager.setAppVolume(app.packageName, lastVolume)
+                        settingsDataStore.setLastAppVolume(app.packageName, lastVolume)
+                    } else {
+                        settingsDataStore.setLastAppVolume(app.packageName, app.volume)
+                        manager.setAppVolume(app.packageName, 0f)
+                    }
                 }
                 resumeTimer()
             },
@@ -523,7 +542,13 @@ private fun AppSliderRow(app: Manager.AppState, manager: Manager, pauseTimer: ()
 
         Slider(
             value = app.volume,
-            onValueChange = { newVol -> manager.setAppVolume(app.packageName, newVol) },
+            onValueChange = { newVol ->
+                manager.setAppVolume(app.packageName, newVol)
+                if (newVol > 0f) {
+                    lastVolume = newVol
+                    scope.launch { settingsDataStore.setLastAppVolume(app.packageName, newVol) }
+                }
+            },
             onValueChangeFinished = { resumeTimer() },
             interactionSource = interactionSource,
             valueRange = 0f..1f,

@@ -52,8 +52,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -210,7 +213,7 @@ fun SettingsScreen(
             }
             AnimatedContent(targetState = selectedTabIndex, label = "tab-content") { targetIndex ->
                 when (targetIndex) {
-                    0 -> VolumeControlTab(manager = manager)
+                    0 -> VolumeControlTab(manager = manager, settingsDataStore = settingsDataStore)
                     1 -> OverlaySettingsTab(settingsDataStore = settingsDataStore)
                     2 -> AppFilteringTab(viewModel = viewModel)
                 }
@@ -230,9 +233,11 @@ private fun AppSettingsButton() {
 }
 
 @Composable
-fun VolumeControlTab(manager: Manager) {
+fun VolumeControlTab(manager: Manager, settingsDataStore: SettingsDataStore) {
     val activeApps =
         manager.apps.values.filter { it.players.isNotEmpty() }.sortedBy { it.label.lowercase() }
+    val lastAppVolumes by settingsDataStore.lastAppVolumes.collectAsState(initial = emptyMap())
+
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -241,7 +246,7 @@ fun VolumeControlTab(manager: Manager) {
     ) {
         if (activeApps.isNotEmpty()) {
             items(activeApps, key = { it.packageName }) { app ->
-                AppVolumeCardInSettings(app, manager)
+                AppVolumeCardInSettings(app, manager, lastAppVolumes, settingsDataStore)
             }
         } else {
             item {
@@ -257,20 +262,71 @@ fun VolumeControlTab(manager: Manager) {
 
 
 @Composable
-private fun AppVolumeCardInSettings(app: Manager.AppState, manager: Manager) {
-    Row(Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Image(
-            bitmap = app.icon, // Uses ImageBitmap
-            contentDescription = app.label,
-            Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))
-        )
-        Spacer(Modifier.width(16.dp))
+private fun AppVolumeCardInSettings(
+    app: Manager.AppState,
+    manager: Manager,
+    lastAppVolumes: Map<String, Float>,
+    settingsDataStore: SettingsDataStore
+) {
+    val scope = rememberCoroutineScope()
+    var lastVolume by remember(app.packageName) {
+        mutableFloatStateOf(lastAppVolumes[app.packageName] ?: (if (app.volume > 0.05f) app.volume else 0.7f))
+    }
+    val isMuted = app.volume < 0.01f
+
+    val iconModifier = if (isMuted) Modifier.alpha(0.5f) else Modifier
+    val colorFilter = if (isMuted) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) else null
+
+    Row(
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        IconButton(
+            onClick = {
+                scope.launch {
+                    if (isMuted) {
+                        manager.setAppVolume(app.packageName, lastVolume)
+                        settingsDataStore.setLastAppVolume(app.packageName, lastVolume)
+                    } else {
+                        settingsDataStore.setLastAppVolume(app.packageName, app.volume)
+                        manager.setAppVolume(app.packageName, 0f)
+                    }
+                }
+            },
+            modifier = Modifier.padding(start = 16.dp)
+        ) {
+            Image(
+                bitmap = app.icon, // Uses ImageBitmap
+                contentDescription = app.label,
+                modifier = iconModifier.size(24.dp).clip(RoundedCornerShape(4.dp)),
+                colorFilter = colorFilter
+            )
+        }
+
         Column(Modifier.weight(1f)) {
             Text(app.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Slider(
                 value = app.volume,
-                onValueChange = { manager.setAppVolume(app.packageName, it) })
+                onValueChange = { newVol ->
+                    manager.setAppVolume(app.packageName, newVol)
+                    if (newVol > 0f) {
+                        lastVolume = newVol
+                        scope.launch { settingsDataStore.setLastAppVolume(app.packageName, newVol) }
+                    }
+                },
+                valueRange = 0f..1f,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
+
+        Text(
+            text = "${(app.volume * 100).toInt()}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 16.dp).width(32.dp),
+            textAlign = TextAlign.End
+        )
     }
 }
 
