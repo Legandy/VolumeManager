@@ -39,7 +39,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,17 +64,8 @@ fun OnboardingFlow(
     onGrantShizukuClick: () -> Unit,
     onOpenAccessibilityClick: () -> Unit,
     onOpenNotificationAccessClick: () -> Unit,
-    onGrantBluetoothClick: () -> Unit,
-    forceRestart: Boolean, // New parameter
-    onOnboardingRestartHandled: () -> Unit // New parameter
+    onGrantBluetoothClick: () -> Unit
 ) {
-    LaunchedEffect(forceRestart) {
-        if (forceRestart) {
-            onNavigateTo(MainActivity.OnboardingStep.Welcome)
-            onOnboardingRestartHandled()
-        }
-    }
-
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_setup_title)) }) }) { padding ->
         Column(
             modifier = Modifier

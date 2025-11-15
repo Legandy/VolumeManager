@@ -48,7 +48,6 @@ class MainActivity : ComponentActivity() {
                     onGrantShizukuClickFromActivity = { MyApplication.manager.requestShizukuPermission(this) },
                     onNavigateToOnboardingStep = mainViewModel::navigateToOnboardingStep,
                     onOnboardingComplete = mainViewModel::completeOnboarding,
-                    onOnboardingRestartHandled = mainViewModel::onboardingRestartHandled,
                     viewModel = mainViewModel
                 )
             }

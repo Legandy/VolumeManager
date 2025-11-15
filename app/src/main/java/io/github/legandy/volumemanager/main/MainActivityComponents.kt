@@ -23,7 +23,6 @@ fun MainScreen(
     onGrantShizukuClickFromActivity: () -> Unit, // Callback to request Shizuku permission
     onNavigateToOnboardingStep: (OnboardingStep) -> Unit,
     onOnboardingComplete: () -> Unit,
-    onOnboardingRestartHandled: () -> Unit,
     viewModel: MainActivityViewModel // Added ViewModel here
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -64,8 +63,6 @@ fun MainScreen(
                 onOpenAccessibilityClick = onOpenAccessibilityClick,
                 onOpenNotificationAccessClick = onOpenNotificationAccessClick,
                 onGrantBluetoothClick = { bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) },
-                forceRestart = uiState.forceOnboardingRestart, // Pass the forceRestart flag
-                onOnboardingRestartHandled = onOnboardingRestartHandled // Pass the handler
             )
         }
         else -> { // Onboarding completed or not launched from launcher
