@@ -1,4 +1,4 @@
 package io.github.legandy.volumemanager.about
 
-class AboutComponents {
+class AboutScreen {
 }

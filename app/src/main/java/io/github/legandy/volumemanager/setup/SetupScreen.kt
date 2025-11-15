@@ -53,7 +53,7 @@ import io.github.legandy.volumemanager.main.MainActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OnboardingFlow(
+fun SetupScreen(
     currentStep: MainActivity.OnboardingStep,
     onNavigateTo: (MainActivity.OnboardingStep) -> Unit,
     onOnboardingComplete: () -> Unit,

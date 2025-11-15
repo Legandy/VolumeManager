@@ -11,8 +11,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.legandy.volumemanager.core.MyApplication
 import io.github.legandy.volumemanager.main.MainActivity.OnboardingStep
 import io.github.legandy.volumemanager.settings.ui.SettingsScreen
-import io.github.legandy.volumemanager.setup.OnboardingFlow
-import io.github.legandy.volumemanager.setup.WaitingForShizukuScreen // Import WaitingForShizukuScreen from SetupComponents
+import io.github.legandy.volumemanager.setup.SetupScreen
+import io.github.legandy.volumemanager.setup.WaitingForShizukuScreen
 
 @Composable
 fun MainScreen(
@@ -20,11 +20,11 @@ fun MainScreen(
     isLaunchedFromLauncher: Boolean,
     onOpenAccessibilityClick: () -> Unit,
     onOpenNotificationAccessClick: () -> Unit,
-    onGrantShizukuClickFromActivity: () -> Unit, // Callback to request Shizuku permission
-    onGrantAllPermissionsClick: () -> Unit, // New callback for granting all permissions
+    onGrantShizukuClickFromActivity: () -> Unit,
+    onGrantAllPermissionsClick: () -> Unit,
     onNavigateToOnboardingStep: (OnboardingStep) -> Unit,
     onOnboardingComplete: () -> Unit,
-    viewModel: MainActivityViewModel // Added ViewModel here
+    viewModel: MainActivityViewModel
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -33,15 +33,15 @@ fun MainScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         // Update ViewModel after permission result
-        viewModel.onActivityResume() // Trigger ViewModel to check permissions again, without resetting onboarding step
+        viewModel.onActivityResume()
     }
 
     // Lifecycle observer to refresh state on resume
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onActivityResume() // New function to handle general activity resume logic
-                viewModel.onRefreshStatus() // Specifically for refreshing accessibility and other dynamic statuses
+                viewModel.onActivityResume()
+                viewModel.onRefreshStatus()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -52,7 +52,7 @@ fun MainScreen(
     when {
         !uiState.hasShizukuReady -> WaitingForShizukuScreen()
         uiState.forceOnboardingRestart || (!uiState.isOnboardingCompleted && isLaunchedFromLauncher) -> {
-            OnboardingFlow(
+            SetupScreen(
                 currentStep = uiState.currentOnboardingStep,
                 onNavigateTo = onNavigateToOnboardingStep,
                 onOnboardingComplete = onOnboardingComplete,
@@ -64,7 +64,7 @@ fun MainScreen(
                 onOpenAccessibilityClick = onOpenAccessibilityClick,
                 onOpenNotificationAccessClick = onOpenNotificationAccessClick,
                 onGrantBluetoothClick = { bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) },
-                onGrantAllPermissionsClick = onGrantAllPermissionsClick, // Pass the new callback
+                onGrantAllPermissionsClick = onGrantAllPermissionsClick,
             )
         }
         else -> { // Onboarding completed or not launched from launcher
