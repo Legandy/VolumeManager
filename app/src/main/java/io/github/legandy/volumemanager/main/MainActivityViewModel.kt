@@ -94,6 +94,9 @@ class MainActivityViewModel(application: Application, private val savedStateHand
     fun completeOnboarding() {
         _uiState.value = _uiState.value.copy(isOnboardingCompleted = true)
         savedStateHandle[IS_ONBOARDING_COMPLETED_KEY] = true
+        if (_uiState.value.forceOnboardingRestart) {
+            onboardingRestartHandled()
+        }
         // In a real app, you'd save this preference to DataStore here
         // For now, it's just in-memory state
     }
