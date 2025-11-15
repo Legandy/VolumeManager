@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
                     onOpenAccessibilityClick = { openAccessibilitySettings() },
                     onOpenNotificationAccessClick = { openNotificationAccessSettings() },
                     onGrantShizukuClickFromActivity = { MyApplication.manager.requestShizukuPermission(this) },
+                    onGrantAllPermissionsClick = { mainViewModel.grantAllPermissionsWithShizuku() },
                     onNavigateToOnboardingStep = mainViewModel::navigateToOnboardingStep,
                     onOnboardingComplete = mainViewModel::completeOnboarding,
                     viewModel = mainViewModel

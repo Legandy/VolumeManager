@@ -117,6 +117,15 @@ class MainActivityViewModel(application: Application, private val savedStateHand
         savedStateHandle[CURRENT_ONBOARDING_STEP_KEY] = OnboardingStep.Welcome
     }
 
+    fun grantAllPermissionsWithShizuku() {
+        viewModelScope.launch {
+            manager.grantAccessibilityPermission(getApplication())
+            manager.grantNotificationPermission(getApplication())
+            onRefreshStatus()
+            completeOnboarding()
+        }
+    }
+
     // This data class represents all the UI state for MainActivity
     data class MainUiState(
         val hasShizukuReady: Boolean = false,

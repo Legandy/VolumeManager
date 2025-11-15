@@ -64,7 +64,8 @@ fun OnboardingFlow(
     onGrantShizukuClick: () -> Unit,
     onOpenAccessibilityClick: () -> Unit,
     onOpenNotificationAccessClick: () -> Unit,
-    onGrantBluetoothClick: () -> Unit
+    onGrantBluetoothClick: () -> Unit,
+    onGrantAllPermissionsClick: () -> Unit // New parameter
 ) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_setup_title)) }) }) { padding ->
         Column(
@@ -83,7 +84,8 @@ fun OnboardingFlow(
                 MainActivity.OnboardingStep.Shizuku -> ShizukuPermissionScreen(
                     hasShizuku = hasShizukuPermission,
                     onGrantShizukuClick = onGrantShizukuClick,
-                    onNextClick = { onNavigateTo(MainActivity.OnboardingStep.Accessibility) }
+                    onNextClick = { onNavigateTo(MainActivity.OnboardingStep.Accessibility) },
+                    onGrantAllPermissionsClick = onGrantAllPermissionsClick // Pass the new parameter
                 )
                 MainActivity.OnboardingStep.Accessibility -> AccessibilityPermissionScreen(
                     hasAccessibility = isAccessibilityEnabled,
@@ -145,7 +147,8 @@ fun WelcomeScreen(onGetStartedClick: () -> Unit) {
 fun ShizukuPermissionScreen(
     hasShizuku: Boolean,
     onGrantShizukuClick: () -> Unit,
-    onNextClick: () -> Unit
+    onNextClick: () -> Unit,
+    onGrantAllPermissionsClick: () -> Unit // New parameter
 ) {
     val context = LocalContext.current
     val shizukuIntent = remember {
@@ -190,6 +193,13 @@ fun ShizukuPermissionScreen(
             enabled = !hasShizuku
         ) {
             Text(stringResource(R.string.shizuku_grant_button))
+        }
+        Button(
+            onClick = onGrantAllPermissionsClick,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = hasShizuku // Only enabled if Shizuku is granted
+        ) {
+            Text(stringResource(R.string.grant_all_permissions_button)) // This string needs to be added
         }
         Button(
             onClick = onNextClick,

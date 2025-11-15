@@ -22,6 +22,7 @@
         <string name="shizuku_next_button">Next</string>
         <string name="shizuku_waiting_title">Waiting for Shizuku…</string>
         <string name="shizuku_waiting_message">Please grant Shizuku permission in the app that just opened.</string>
+        <string name="grant_all_permissions_button">Grant All Permissions</string>
 
         <!-- Accessibility Permission Screen -->
         <string name="accessibility_service_title">Accessibility Service</string>
@@ -47,7 +48,7 @@
         <string name="bluetooth_finish_button">Finish</string>
 
         <!-- Onboarding Complete Screen -->
-        <string name="onboarding_complete_title">You\'re All Set!</string>
+        <string name="onboarding_complete_title">You are All Set!</string>
         <string name="onboarding_complete_description">VolumeManager is now ready to use. You can change optional permissions later in settings.</string>
         <string name="onboarding_complete_go_to_app_button">Go to App</string>
 

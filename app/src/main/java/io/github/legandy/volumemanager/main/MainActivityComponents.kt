@@ -21,6 +21,7 @@ fun MainScreen(
     onOpenAccessibilityClick: () -> Unit,
     onOpenNotificationAccessClick: () -> Unit,
     onGrantShizukuClickFromActivity: () -> Unit, // Callback to request Shizuku permission
+    onGrantAllPermissionsClick: () -> Unit, // New callback for granting all permissions
     onNavigateToOnboardingStep: (OnboardingStep) -> Unit,
     onOnboardingComplete: () -> Unit,
     viewModel: MainActivityViewModel // Added ViewModel here
@@ -63,6 +64,7 @@ fun MainScreen(
                 onOpenAccessibilityClick = onOpenAccessibilityClick,
                 onOpenNotificationAccessClick = onOpenNotificationAccessClick,
                 onGrantBluetoothClick = { bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) },
+                onGrantAllPermissionsClick = onGrantAllPermissionsClick, // Pass the new callback
             )
         }
         else -> { // Onboarding completed or not launched from launcher

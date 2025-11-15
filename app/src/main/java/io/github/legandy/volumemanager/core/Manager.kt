@@ -3,6 +3,7 @@ package io.github.legandy.volumemanager.core
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.ActivityManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioManager
@@ -20,6 +21,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import io.github.legandy.volumemanager.overlay.OverlayService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -59,7 +61,7 @@ class Manager(
         private fun getShizukuService(name: String, type: String): Any {
             val binder = SystemServiceHelper.getSystemService(name)
             val wrapper = ShizukuBinderWrapper(binder)
-            return Reflect.onClass("$type\$Stub").call("asInterface", wrapper).get()
+            return Reflect.onClass("$type${'$'}Stub").call("asInterface", wrapper).get()
         }
     }
 
@@ -70,6 +72,8 @@ class Manager(
 
     private var shizukuActivityManager: Reflect? = null
     private var shizukuAudioManager: Reflect? = null
+    private var shizukuNotificationManager: Reflect? = null
+
 
     val apps = mutableStateMapOf<String, AppState>()
     var shizukuReady by mutableStateOf(false); private set
@@ -96,6 +100,7 @@ class Manager(
                 shizukuReady = false; shizukuPermission = false
                 shizukuActivityManager = null
                 shizukuAudioManager = null
+                shizukuNotificationManager = null
                 started = false
             }
             override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
@@ -126,6 +131,7 @@ class Manager(
 
             audioManager = context.getSystemService(AudioManager::class.java)!!
             shizukuActivityManager = Reflect.on(getShizukuService(Context.ACTIVITY_SERVICE, "android.app.IActivityManager"))
+            shizukuNotificationManager = Reflect.on(getShizukuService(Context.NOTIFICATION_SERVICE, "android.app.INotificationManager"))
         } catch (e: Exception) {
             Log.e(TAG, "Failed to inject Shizuku services", e)
             return
@@ -164,6 +170,32 @@ class Manager(
             } catch (fe: Exception) {
                 Log.e(TAG, "Public API fallback also failed", fe)
             }
+        }
+    }
+
+    fun grantAccessibilityPermission(context: Context) {
+        try {
+            val componentName = ComponentName(context.packageName, OverlayService::class.java.name)
+            val userId = android.os.Process.myUserHandle().hashCode() // Get current user ID
+            Log.d(TAG, "Attempting to grant accessibility permission for ${componentName.flattenToString()} for user $userId")
+            if (shizukuActivityManager == null) {
+                Log.e(TAG, "shizukuActivityManager is null. Shizuku service not injected or failed to initialize.")
+                return
+            }
+            shizukuActivityManager?.call("enableAccessibilityService", componentName, userId)
+            Log.d(TAG, "Granted accessibility permission for ${componentName.flattenToString()} for user $userId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to grant accessibility permission via Shizuku: ${e.message}", e)
+        }
+    }
+
+    fun grantNotificationPermission(context: Context) {
+        try {
+            val userId = android.os.Process.myUserHandle().hashCode()
+            shizukuNotificationManager?.call("setNotificationPolicyAccessGrantedForUser", arrayOf(String::class.java, java.lang.Boolean::class.java, java.lang.Integer::class.java), context.packageName, true, userId)
+            Log.d(TAG, "Granted notification policy access for ${context.packageName} for user $userId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to grant notification policy access via Shizuku", e)
         }
     }
 
