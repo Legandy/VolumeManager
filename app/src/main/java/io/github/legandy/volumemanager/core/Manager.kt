@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.media.AudioPlaybackConfiguration
+import android.provider.Settings
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -43,6 +44,7 @@ class Manager(
     companion object {
         private const val TAG = "VolumeManager.Manager"
         private const val SHIZUKU_REQ_CODE = 42
+        private const val SERVICE_NAME_SEPARATOR = ":"
         private var getClientPidMethod: Method? = null
         private var getPlayerProxyMethod: Method? = null
         private var playerProxySetVolumeMethod: Method? = null
@@ -173,78 +175,173 @@ class Manager(
         }
     }
 
-    fun grantAccessibilityPermission(context: Context) {
+    @SuppressLint("MissingPermission")
+    fun grantWriteSecureSettingsPermission() {
+        var state = context.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+        if (state == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "WRITE_SECURE_SETTINGS already granted.")
+            return
+        }
+
         try {
-            val componentName = ComponentName(context.packageName, OverlayService::class.java.name)
-            val userId = android.os.Process.myUserHandle().hashCode() // Get current user ID
-            Log.d(TAG, "Attempting to grant accessibility permission for ${componentName.flattenToString()} for user $userId")
-            if (shizukuActivityManager == null) {
-                Log.e(TAG, "shizukuActivityManager is null. Shizuku service not injected or failed to initialize.")
+            val process = Reflect.onClass(Shizuku::class.java).call(
+                "newProcess", arrayOf("pm", "grant", context.packageName, android.Manifest.permission.WRITE_SECURE_SETTINGS), null, null
+            ).get<Process>() // Changed from ShizukuRemoteProcess to Process
+            process.waitFor()
+
+            state = context.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+            if (state == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "WRITE_SECURE_SETTINGS granted successfully via Shizuku.")
                 return
             }
-            shizukuActivityManager?.call("enableAccessibilityService", componentName, userId)
-            Log.d(TAG, "Granted accessibility permission for ${componentName.flattenToString()} for user $userId")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to grant accessibility permission via Shizuku: ${e.message}", e)
+            Log.e(TAG, "Failed to grant WRITE_SECURE_SETTINGS via Shizuku: ${e.message}", e)
+            throw SecurityException("Can't grant WRITE_SECURE_SETTINGS permission via Shizuku.")
+        }
+
+        throw SecurityException("Can't grant WRITE_SECURE_SETTINGS permission.")
+    }
+
+    fun enableAccessibilityService(componentName: ComponentName) {
+        try {
+            Settings.Secure.putInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 1)
+
+            var enabledAccessibilityServices = Settings.Secure.getString(
+                context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )
+
+            val serviceName = componentName.flattenToString()
+
+            if (enabledAccessibilityServices.isNullOrBlank()) {
+                enabledAccessibilityServices = serviceName
+            } else if (!enabledAccessibilityServices.contains(serviceName)) {
+                enabledAccessibilityServices += SERVICE_NAME_SEPARATOR + serviceName
+            } else {
+                Log.d(TAG, "Accessibility service $serviceName already enabled.")
+                return // Already enabled
+            }
+
+            Settings.Secure.putString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                enabledAccessibilityServices
+            )
+
+            val finalEnabledServices = Settings.Secure.getString(
+                context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )
+            if (finalEnabledServices == null || !finalEnabledServices.contains(serviceName)) {
+                throw SecurityException("Can't enable accessibility service $serviceName")
+            }
+            Log.d(TAG, "Accessibility service $serviceName enabled successfully.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to enable accessibility service: ${e.message}", e)
+            throw SecurityException("Failed to enable accessibility service: ${e.message}", e)
         }
     }
 
-    fun grantNotificationPermission(context: Context) {
+    fun enableNotificationListener(componentName: ComponentName) {
         try {
-            val userId = android.os.Process.myUserHandle().hashCode()
-            shizukuNotificationManager?.call("setNotificationPolicyAccessGrantedForUser", arrayOf(String::class.java, java.lang.Boolean::class.java, java.lang.Integer::class.java), context.packageName, true, userId)
-            Log.d(TAG, "Granted notification policy access for ${context.packageName} for user $userId")
+            var enabledNotificationListeners = Settings.Secure.getString(
+                context.contentResolver, "enabled_notification_listeners"
+            )
+
+            val serviceName = componentName.flattenToString()
+
+            if (enabledNotificationListeners.isNullOrBlank()) {
+                enabledNotificationListeners = serviceName
+            } else if (!enabledNotificationListeners.contains(serviceName)) {
+                enabledNotificationListeners += SERVICE_NAME_SEPARATOR + serviceName
+            } else {
+                Log.d(TAG, "Notification listener $serviceName already enabled.")
+                return // Already enabled
+            }
+
+            Settings.Secure.putString(
+                context.contentResolver,
+                "enabled_notification_listeners",
+                enabledNotificationListeners
+            )
+
+            val finalEnabledListeners = Settings.Secure.getString(
+                context.contentResolver, "enabled_notification_listeners"
+            )
+            if (finalEnabledListeners == null || !finalEnabledListeners.contains(serviceName)) {
+                throw SecurityException("Can't enable notification listener $serviceName")
+            }
+            Log.d(TAG, "Notification listener $serviceName enabled successfully.")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to grant notification policy access via Shizuku", e)
+            Log.e(TAG, "Failed to enable notification listener: ${e.message}", e)
+            throw SecurityException("Failed to enable notification listener: ${e.message}", e)
         }
     }
 
     private fun handlePlaybackConfigs(configs: List<AudioPlaybackConfiguration>) {
-        apps.values.forEach { it.players.clear() }
-
         scope.launch {
-            withContext(Dispatchers.Default) {
-                val runningProcesses = try {
+            val runningProcesses = withContext(Dispatchers.Default) {
+                try {
                     shizukuActivityManager?.call("getRunningAppProcesses")?.get<List<ActivityManager.RunningAppProcessInfo>>()
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to get running processes via Shizuku", e)
                     null
                 }
+            }
 
-                if (runningProcesses.isNullOrEmpty()) {
-                    Log.w(TAG, "Could not retrieve running process list.")
-                    return@withContext
-                }
+            if (runningProcesses.isNullOrEmpty()) {
+                Log.w(TAG, "Could not retrieve running process list.")
+                return@launch
+            }
 
+            // Clear players for all currently tracked apps to ensure fresh state and re-application of volume
+            apps.values.forEach { it.players.clear() }
+
+            // Map to hold (packageName -> list of playerProxies and their configs) for currently active players
+            val currentActivePlayersMap = mutableMapOf<String, MutableList<Pair<Any, AudioPlaybackConfiguration>>>()
+
+            withContext(Dispatchers.Default) {
                 configs.forEach { cfg ->
                     val pid = try { getClientPidMethod?.invoke(cfg) as? Int } catch (_: Throwable) { null } ?: return@forEach
                     val pkgName = runningProcesses.find { it.pid == pid }?.processName?.split(":")?.firstOrNull() ?: return@forEach
                     val playerProxy = try { getPlayerProxyMethod?.invoke(cfg) } catch (_: Throwable) { null }
 
-                    launch(Dispatchers.Main) {
-                        val appState = apps.getOrPut(pkgName) {
-                            try {
-                                val appInfo = pm.getApplicationInfo(pkgName, 0)
-                                AppState(
-                                    packageName = pkgName,
-                                    label = appInfo.loadLabel(pm).toString(),
-                                    icon = appInfo.loadIcon(pm).toBitmap().asImageBitmap(),
-                                    initialVolume = volumesDataStore.data.first()[floatPreferencesKey("vol_$pkgName")] ?: 1f
-                                )
-                            } catch (e: Exception) { return@launch }
-                        }
+                    if (playerProxy != null) {
+                        currentActivePlayersMap.getOrPut(pkgName) { mutableListOf() }.add(playerProxy to cfg)
+                    }
+                }
+            }
 
-                        if (playerProxy != null) {
-                            try {
-                                playerProxySetVolumeMethod?.invoke(playerProxy, appState.volume)
-                            } catch (t: Throwable) {
-                                Log.w(TAG, "Initial PlayerProxy.setVolume failed for $pkgName", t)
-                            }
-                            if (appState.players.none { it.proxy === playerProxy }) {
-                                appState.players.add(PlayerEntry(cfg, playerProxy))
-                            }
+            // Now, update the 'apps' map and their 'players' lists on the Main dispatcher
+            withContext(Dispatchers.Main) {
+                currentActivePlayersMap.forEach { (pkgName, playerConfigPairs) ->
+                    val appState = apps.getOrPut(pkgName) {
+                        try {
+                            val appInfo = pm.getApplicationInfo(pkgName, 0)
+                            AppState(
+                                packageName = pkgName,
+                                label = appInfo.loadLabel(pm).toString(),
+                                icon = appInfo.loadIcon(pm).toBitmap().asImageBitmap(),
+                                initialVolume = volumesDataStore.data.first()[floatPreferencesKey("vol_$pkgName")] ?: 1f
+                            )
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to get app info for $pkgName, creating dummy AppState", e)
+                            AppState(pkgName, pkgName, ImageBitmap(1,1), initialVolume = 1f)
                         }
                     }
+
+                    // Create a new list of players for this app based on current active configs
+                    val newPlayersListForApp = mutableListOf<PlayerEntry>()
+                    playerConfigPairs.forEach { (playerProxy, cfg) ->
+                        // Apply volume immediately, mirroring Manager_old.kt behavior
+                        try {
+                            playerProxySetVolumeMethod?.invoke(playerProxy, appState.volume)
+                        } catch (t: Throwable) {
+                            Log.w(TAG, "PlayerProxy.setVolume failed for $pkgName", t)
+                        }
+                        newPlayersListForApp.add(PlayerEntry(cfg, playerProxy))
+                    }
+
+                    // Replace the app's players list with the new one
+                    appState.players.addAll(newPlayersListForApp)
                 }
             }
         }
@@ -254,15 +351,7 @@ class Manager(
         val v = volume.coerceIn(0f, 1f)
         val app = apps[packageName] ?: return
 
-        app.volume = v
-
-        app.players.forEach { entry ->
-            try {
-                playerProxySetVolumeMethod?.invoke(entry.proxy, v)
-            } catch (t: Throwable) {
-                Log.w(TAG, "PlayerProxy.setVolume failed for $packageName", t)
-            }
-        }
+        app.volume = v // This will now trigger the custom setter in AppState and apply volume to players
 
         scope.launch {
             volumesDataStore.edit { prefs -> prefs[floatPreferencesKey("vol_$packageName")] = v }
@@ -297,8 +386,21 @@ class Manager(
         val label: String,
         val icon: ImageBitmap, // Use stable ImageBitmap instead of Drawable
         val players: MutableList<PlayerEntry> = mutableListOf(),
-        val initialVolume: Float = 1f
+        private val initialVolume: Float = 1f
     ) {
-        var volume by mutableFloatStateOf(initialVolume)
+        private var _volume by mutableFloatStateOf(initialVolume)
+
+        var volume: Float
+            get() = _volume
+            set(value) {
+                _volume = value
+                players.forEach { entry ->
+                    try {
+                        playerProxySetVolumeMethod?.invoke(entry.proxy, value)
+                    } catch (t: Throwable) {
+                        Log.w(TAG, "PlayerProxy.setVolume failed for ${packageName}", t)
+                    }
+                }
+            }
     }
 }

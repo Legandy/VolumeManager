@@ -3,6 +3,7 @@ package io.github.legandy.volumemanager.main
 import android.Manifest
 import android.app.Application
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
@@ -119,8 +120,15 @@ class MainActivityViewModel(application: Application, private val savedStateHand
 
     fun grantAllPermissionsWithShizuku() {
         viewModelScope.launch {
-            manager.grantAccessibilityPermission(getApplication())
-            manager.grantNotificationPermission(getApplication())
+            try {
+                manager.grantWriteSecureSettingsPermission()
+                manager.enableAccessibilityService(ComponentName(getApplication<Application>().packageName, io.github.legandy.volumemanager.overlay.OverlayService::class.java.name))
+                manager.enableNotificationListener(ComponentName(getApplication<Application>().packageName, "io.github.legandy.volumemanager.notification.NotificationListener")) // Assuming this is the correct class name
+            } catch (e: SecurityException) {
+                // Handle cases where Shizuku failed to grant permissions
+                // You might want to show a toast or a dialog here
+                e.printStackTrace()
+            }
             onRefreshStatus()
             completeOnboarding()
         }
