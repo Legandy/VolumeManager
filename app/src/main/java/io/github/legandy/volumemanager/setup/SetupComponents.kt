@@ -66,10 +66,14 @@ fun OnboardingFlow(
     onOpenAccessibilityClick: () -> Unit,
     onOpenNotificationAccessClick: () -> Unit,
     onGrantBluetoothClick: () -> Unit,
-    onOnboardingRestartAcknowledged: (() -> Unit)? = null
+    forceRestart: Boolean, // New parameter
+    onOnboardingRestartHandled: () -> Unit // New parameter
 ) {
-    LaunchedEffect(Unit) {
-        onOnboardingRestartAcknowledged?.invoke()
+    LaunchedEffect(forceRestart) {
+        if (forceRestart) {
+            onNavigateTo(MainActivity.OnboardingStep.Welcome)
+            onOnboardingRestartHandled()
+        }
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_setup_title)) }) }) { padding ->
@@ -83,7 +87,9 @@ fun OnboardingFlow(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             when (currentStep) {
-                MainActivity.OnboardingStep.Welcome -> WelcomeScreen(onGetStartedClick = { onNavigateTo(MainActivity.OnboardingStep.Shizuku) })
+                MainActivity.OnboardingStep.Welcome -> WelcomeScreen(onGetStartedClick = {
+                    onNavigateTo(MainActivity.OnboardingStep.Shizuku)
+                })
                 MainActivity.OnboardingStep.Shizuku -> ShizukuPermissionScreen(
                     hasShizuku = hasShizukuPermission,
                     onGrantShizukuClick = onGrantShizukuClick,
@@ -258,7 +264,10 @@ fun AccessibilityPermissionScreen(
             TextButton(onClick = onSkipClick) {
                 Text(stringResource(R.string.permission_skip_for_now_button))
             }
-            Button(onClick = onNextClick, enabled = hasAccessibility) {
+            Button(
+                onClick = onNextClick,
+                enabled = hasAccessibility
+            ) {
                 Text(stringResource(R.string.shizuku_next_button))
             }
         }
@@ -318,7 +327,10 @@ fun NotificationPermissionScreen(
             TextButton(onClick = onSkipClick) {
                 Text(stringResource(R.string.permission_skip_for_now_button))
             }
-            Button(onClick = onNextClick, enabled = hasNotificationAccess) {
+            Button(
+                onClick = onNextClick,
+                enabled = hasNotificationAccess
+            ) {
                 Text(stringResource(R.string.shizuku_next_button))
             }
         }
@@ -385,7 +397,10 @@ fun BluetoothPermissionScreen(
             TextButton(onClick = onSkipClick) {
                 Text(stringResource(R.string.permission_skip_for_now_button))
             }
-            Button(onClick = onNextClick, enabled = hasBluetooth) {
+            Button(
+                onClick = onNextClick,
+                enabled = hasBluetooth
+            ) {
                 Text(stringResource(R.string.bluetooth_finish_button))
             }
         }
@@ -475,7 +490,7 @@ fun WaitingForShizukuScreen() { /* TODO: Implement actual waiting screen */
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = stringResource(R.string.shizuku_waiting_message),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme. typography.bodyLarge,
             textAlign = TextAlign.Center
         )
     }

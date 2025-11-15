@@ -51,8 +51,7 @@ fun MainScreen(
     // Routing Logic
     when {
         !uiState.hasShizukuReady -> WaitingForShizukuScreen()
-        uiState.forceOnboardingRestart -> {
-            onOnboardingRestartHandled()
+        uiState.forceOnboardingRestart || (!uiState.isOnboardingCompleted && isLaunchedFromLauncher) -> {
             OnboardingFlow(
                 currentStep = uiState.currentOnboardingStep,
                 onNavigateTo = onNavigateToOnboardingStep,
@@ -64,29 +63,15 @@ fun MainScreen(
                 onGrantShizukuClick = onGrantShizukuClickFromActivity,
                 onOpenAccessibilityClick = onOpenAccessibilityClick,
                 onOpenNotificationAccessClick = onOpenNotificationAccessClick,
-                onGrantBluetoothClick = { bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) }
+                onGrantBluetoothClick = { bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) },
+                forceRestart = uiState.forceOnboardingRestart, // Pass the forceRestart flag
+                onOnboardingRestartHandled = onOnboardingRestartHandled // Pass the handler
             )
         }
-        !isLaunchedFromLauncher || uiState.isOnboardingCompleted -> {
-            // If not launched from launcher OR onboarding is complete, show settings
+        else -> { // Onboarding completed or not launched from launcher
             SettingsScreen(
                 settingsDataStore = MyApplication.settings,
                 manager = MyApplication.manager,
-            )
-        }
-        else -> { // Launched from launcher, Shizuku ready, onboarding not complete
-            OnboardingFlow(
-                currentStep = uiState.currentOnboardingStep,
-                onNavigateTo = onNavigateToOnboardingStep,
-                onOnboardingComplete = onOnboardingComplete,
-                hasShizukuPermission = uiState.shizukuPermission,
-                isAccessibilityEnabled = uiState.isAccessibilityEnabled,
-                hasNotificationAccess = uiState.hasNotificationAccess,
-                hasBluetooth = uiState.hasBluetoothPermission,
-                onGrantShizukuClick = onGrantShizukuClickFromActivity,
-                onOpenAccessibilityClick = onOpenAccessibilityClick,
-                onOpenNotificationAccessClick = onOpenNotificationAccessClick,
-                onGrantBluetoothClick = { bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) }
             )
         }
     }
