@@ -1,12 +1,14 @@
 package io.github.legandy.volumemanager.settings.ui
 
 import android.content.Intent
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,7 +47,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -147,14 +148,14 @@ fun SettingClickableItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SettingsScreen(
     settingsDataStore: SettingsDataStore,
     manager: Manager
 ) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
     val viewModel: SettingsViewModel = viewModel()
+    val scope = rememberCoroutineScope() // Added rememberCoroutineScope
 
     val tabs = listOf(
         SettingsTabItem(
@@ -162,9 +163,11 @@ fun SettingsScreen(
             Icons.AutoMirrored.Outlined.VolumeUp,
             Icons.AutoMirrored.Filled.VolumeUp
         ),
-        SettingsTabItem("Overlay", Icons.Outlined.Visibility, Icons.Filled.Visibility),
-        SettingsTabItem("Apps", Icons.Outlined.Apps, Icons.Filled.Apps)
+        SettingsTabItem("Apps", Icons.Outlined.Apps, Icons.Filled.Apps),
+        SettingsTabItem("Overlay", Icons.Outlined.Visibility, Icons.Filled.Visibility)
     )
+
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
 
     Scaffold(
         topBar = {
@@ -190,10 +193,17 @@ fun SettingsScreen(
         },
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+            PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
                 tabs.forEachIndexed { index, tab ->
-                    val isSelected = selectedTabIndex == index
-                    Tab(selected = isSelected, onClick = { selectedTabIndex = index }) {
+                    val isSelected = pagerState.currentPage == index
+                    Tab(
+                        selected = isSelected,
+                        onClick = {
+                            scope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        }
+                    ) {
                         Column(
                             modifier = Modifier.padding(vertical = 12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -211,11 +221,16 @@ fun SettingsScreen(
                     }
                 }
             }
-            AnimatedContent(targetState = selectedTabIndex, label = "tab-content") { targetIndex ->
-                when (targetIndex) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f) // Fill remaining space
+            ) { page ->
+                when (page) {
                     0 -> VolumeControlTab(manager = manager, settingsDataStore = settingsDataStore)
-                    1 -> OverlaySettingsTab(settingsDataStore = settingsDataStore)
-                    2 -> AppFilteringTab(viewModel = viewModel)
+                    1 -> AppFilteringTab(viewModel = viewModel)
+                    2 -> OverlaySettingsTab(settingsDataStore = settingsDataStore)
                 }
             }
         }

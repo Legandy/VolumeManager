@@ -38,6 +38,9 @@ androidx-material-icons-extended = { group = "androidx.compose.material", name =
 joor = { group = "org.jooq", name = "joor", version.ref = "joor" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypass" }
 
+# Foundation for pager
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
+
 # AndroidX core / lifecycle / activity
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
@@ -54,4 +57,3 @@ shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-

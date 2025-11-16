@@ -67,6 +67,9 @@ dependencies {
     implementation(libs.joor)
     implementation(libs.hiddenapibypass)
 
+    // Foundation for pager
+    implementation(libs.androidx.compose.foundation)
+
 
     // AndroidX & lifecycle
     implementation(libs.androidx.activity.compose)
