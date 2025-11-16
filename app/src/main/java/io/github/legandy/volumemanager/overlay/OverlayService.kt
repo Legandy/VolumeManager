@@ -28,7 +28,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import io.github.legandy.volumemanager.core.MyApplication
-import io.github.legandy.volumemanager.core.Manager
+import io.github.legandy.volumemanager.core.ShizukuManager
 import io.github.legandy.volumemanager.settings.SettingsDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +50,7 @@ class OverlayService : AccessibilityService() {
     private val audioManager: AudioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
     private val keyguardManager: KeyguardManager by lazy { getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
 
-    private val manager: Manager by lazy { MyApplication.manager }
+    private val manager: ShizukuManager by lazy { MyApplication.manager }
     private val settingsDataStore: SettingsDataStore by lazy { MyApplication.settings }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isOverlayVisible by mutableStateOf(false)

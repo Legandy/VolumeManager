@@ -36,7 +36,7 @@ import rikka.shizuku.SystemServiceHelper
 import java.lang.reflect.Method
 
 @SuppressLint("PrivateApi")
-class Manager(
+class ShizukuManager(
     private val context: Context,
     private val volumesDataStore: DataStore<Preferences>
 ) {

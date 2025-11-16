@@ -8,7 +8,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
-import io.github.legandy.volumemanager.core.Manager
+import io.github.legandy.volumemanager.core.ShizukuManager
 import io.github.legandy.volumemanager.settings.ui.SettingsScreen
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 
@@ -16,14 +16,14 @@ class SettingsActivity : ComponentActivity() {
 
     private lateinit var settingsDataStore: SettingsDataStore
     private lateinit var volumesDataStore: DataStore<Preferences>
-    private lateinit var manager: Manager
+    private lateinit var manager: ShizukuManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         settingsDataStore = SettingsDataStore(provideSettingsDataStore(applicationContext))
         volumesDataStore = provideVolumesDataStore(applicationContext)
-        manager = Manager(applicationContext, volumesDataStore)
+        manager = ShizukuManager(applicationContext, volumesDataStore)
 
         setContent {
             VolumeManagerTheme {

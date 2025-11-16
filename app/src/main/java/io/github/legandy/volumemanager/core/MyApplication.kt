@@ -19,8 +19,8 @@ class MyApplication : Application() {
             SettingsDataStore(instance.appSettingsDataStore)
         }
 
-        val manager: Manager by lazy {
-            Manager(
+        val manager: ShizukuManager by lazy {
+            ShizukuManager(
                 instance.applicationContext,
                 instance.appVolumesDataStore
             )

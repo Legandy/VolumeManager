@@ -69,7 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.legandy.volumemanager.R
 import io.github.legandy.volumemanager.app.AppSettingsActivity
-import io.github.legandy.volumemanager.core.Manager
+import io.github.legandy.volumemanager.core.ShizukuManager
 import io.github.legandy.volumemanager.settings.AppFilterMode
 import io.github.legandy.volumemanager.settings.InstalledAppData
 import io.github.legandy.volumemanager.settings.SettingsDataStore
@@ -152,7 +152,7 @@ fun SettingClickableItem(
 @Composable
 fun SettingsScreen(
     settingsDataStore: SettingsDataStore,
-    manager: Manager
+    manager: ShizukuManager
 ) {
     val viewModel: SettingsViewModel = viewModel()
     val scope = rememberCoroutineScope() // Added rememberCoroutineScope
@@ -248,7 +248,7 @@ private fun AppSettingsButton() {
 }
 
 @Composable
-fun VolumeControlTab(manager: Manager, settingsDataStore: SettingsDataStore) {
+fun VolumeControlTab(manager: ShizukuManager, settingsDataStore: SettingsDataStore) {
     val activeApps =
         manager.apps.values.filter { it.players.isNotEmpty() }.sortedBy { it.label.lowercase() }
     val lastAppVolumes by settingsDataStore.lastAppVolumes.collectAsState(initial = emptyMap())
@@ -278,8 +278,8 @@ fun VolumeControlTab(manager: Manager, settingsDataStore: SettingsDataStore) {
 
 @Composable
 private fun AppVolumeCardInSettings(
-    app: Manager.AppState,
-    manager: Manager,
+    app: ShizukuManager.AppState,
+    manager: ShizukuManager,
     lastAppVolumes: Map<String, Float>,
     settingsDataStore: SettingsDataStore
 ) {

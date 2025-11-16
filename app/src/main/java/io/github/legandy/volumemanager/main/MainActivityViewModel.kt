@@ -10,7 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import io.github.legandy.volumemanager.core.Manager
+import io.github.legandy.volumemanager.core.ShizukuManager
 import io.github.legandy.volumemanager.core.MyApplication
 import io.github.legandy.volumemanager.main.MainActivity.OnboardingStep
 import io.github.legandy.volumemanager.utils.isAccessibilityServiceEnabled
@@ -22,7 +22,7 @@ import androidx.compose.runtime.snapshotFlow
 
 class MainActivityViewModel(application: Application, private val savedStateHandle: SavedStateHandle) : AndroidViewModel(application) {
 
-    private val manager: Manager = MyApplication.manager
+    private val manager: ShizukuManager = MyApplication.manager
 
     // Keys for SavedStateHandle
     private val CURRENT_ONBOARDING_STEP_KEY = "currentOnboardingStep"

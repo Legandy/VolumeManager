@@ -5,7 +5,6 @@ import android.content.Intent
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.util.Log
-import android.view.MotionEvent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -83,9 +82,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.legandy.volumemanager.main.MainActivity
-import io.github.legandy.volumemanager.core.Manager
+import io.github.legandy.volumemanager.core.ShizukuManager
 import io.github.legandy.volumemanager.settings.AppFilterMode
 import io.github.legandy.volumemanager.settings.SettingsDataStore
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
@@ -102,7 +100,7 @@ fun OverlayScreen(
     resetTimer: () -> Unit,
     pauseTimer: () -> Unit,
     resumeTimer: () -> Unit,
-    manager: Manager,
+    manager: ShizukuManager,
     settingsDataStore: SettingsDataStore
 ) {
     VolumeManagerTheme {
@@ -132,7 +130,7 @@ private fun OverlayContent(
     resetTimer: () -> Unit,
     pauseTimer: () -> Unit,
     resumeTimer: () -> Unit,
-    manager: Manager,
+    manager: ShizukuManager,
     settingsDataStore: SettingsDataStore
 ) {
     var selectedTab by remember { mutableStateOf(OverlayTab.SYSTEM) }
@@ -260,7 +258,7 @@ private fun SystemVolumeSliders(overlayViewModel: OverlayViewModel, pauseTimer: 
 }
 
 @Composable
-private fun AppVolumeSliders(manager: Manager, settingsDataStore: SettingsDataStore, pauseTimer: () -> Unit, resumeTimer: () -> Unit) {
+private fun AppVolumeSliders(manager: ShizukuManager, settingsDataStore: SettingsDataStore, pauseTimer: () -> Unit, resumeTimer: () -> Unit) {
     val filterMode by settingsDataStore.appFilterMode.collectAsState(initial = AppFilterMode.SHOW_ALL)
     val blacklist by settingsDataStore.appBlacklist.collectAsState(initial = emptySet())
     val whitelist by settingsDataStore.appWhitelist.collectAsState(initial = emptySet())
@@ -478,8 +476,8 @@ private fun StreamSliderRow(
 
 @Composable
 private fun AppSliderRow(
-    app: Manager.AppState,
-    manager: Manager,
+    app: ShizukuManager.AppState,
+    manager: ShizukuManager,
     settingsDataStore: SettingsDataStore,
     lastAppVolumes: Map<String, Float>,
     pauseTimer: () -> Unit,

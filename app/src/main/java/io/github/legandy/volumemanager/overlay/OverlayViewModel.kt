@@ -11,7 +11,7 @@ import android.app.NotificationManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.core.content.ContextCompat
 import io.github.legandy.volumemanager.core.MyApplication
-import io.github.legandy.volumemanager.core.Manager
+import io.github.legandy.volumemanager.core.ShizukuManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -28,7 +28,7 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
 
     private val audioManager = application.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val notificationManager = application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val manager: Manager = MyApplication.manager
+    private val manager: ShizukuManager = MyApplication.manager
 
     private val _uiState = MutableStateFlow(SystemAudioUiState())
     val uiState = _uiState.asStateFlow()
