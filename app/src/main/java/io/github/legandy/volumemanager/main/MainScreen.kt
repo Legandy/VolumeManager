@@ -16,7 +16,7 @@ import io.github.legandy.volumemanager.setup.WaitingForShizukuScreen
 
 @Composable
 fun MainScreen(
-    uiState: MainActivityViewModel.MainUiState,
+    uiState: MainViewModel.MainUiState,
     isLaunchedFromLauncher: Boolean,
     onOpenAccessibilityClick: () -> Unit,
     onOpenNotificationAccessClick: () -> Unit,
@@ -24,7 +24,7 @@ fun MainScreen(
     onGrantAllPermissionsClick: () -> Unit,
     onNavigateToOnboardingStep: (OnboardingStep) -> Unit,
     onOnboardingComplete: () -> Unit,
-    viewModel: MainActivityViewModel
+    viewModel: MainViewModel
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
 

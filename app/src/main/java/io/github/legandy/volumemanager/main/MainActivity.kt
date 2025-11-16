@@ -16,7 +16,7 @@ import android.provider.Settings
 
 class MainActivity : ComponentActivity() {
 
-    private val mainViewModel: MainActivityViewModel by viewModels() // Instantiate ViewModel
+    private val mainViewModel: MainViewModel by viewModels() // Instantiate ViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
