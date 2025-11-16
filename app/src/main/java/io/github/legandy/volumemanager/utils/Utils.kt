@@ -10,14 +10,13 @@ import io.github.legandy.volumemanager.overlay.OverlayService
 
 fun isAccessibilityServiceEnabled(context: Context): Boolean {
     val tag = "VolumeManager.Utils"
+    val myServiceComponent = ComponentName(context, OverlayService::class.java)
 
     // Method 1: Check via AccessibilityManager (most reliable)
     try {
         val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
         if (am != null) {
             val enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-            val myServiceComponent = ComponentName(context, OverlayService::class.java)
-
             for (service in enabledServices) {
                 val enabledComponent = ComponentName(
                     service.resolveInfo.serviceInfo.packageName,
@@ -33,7 +32,7 @@ fun isAccessibilityServiceEnabled(context: Context): Boolean {
         Log.w(tag, "Failed to check via AccessibilityManager", e)
     }
 
-    // Method 2: Check via Settings.Secure (fallback)
+    // Method 2: Check via Settings.Secure (fallback - improving robustness)
     try {
         val enabledServicesString = Settings.Secure.getString(
             context.contentResolver,
@@ -41,18 +40,15 @@ fun isAccessibilityServiceEnabled(context: Context): Boolean {
         )
 
         if (!enabledServicesString.isNullOrBlank()) {
-            val myServiceFlat = ComponentName(context, OverlayService::class.java).flattenToString()
-            val myServiceShort = ComponentName(context, OverlayService::class.java).flattenToShortString()
-
-            // Check both full and short component names
-            if (enabledServicesString.contains(myServiceFlat) ||
-                enabledServicesString.contains(myServiceShort)) {
-                Log.d(tag, "Accessibility service is enabled (via Settings.Secure)")
+            val myServiceFlat = myServiceComponent.flattenToString()
+            val colonSeparatedList = enabledServicesString.split(":")
+            if (colonSeparatedList.any { it == myServiceFlat }) {
+                Log.d(tag, "Accessibility service is enabled (via Settings.Secure - robust check)")
                 return true
             }
         }
     } catch (e: Exception) {
-        Log.w(tag, "Failed to check via Settings.Secure", e)
+        Log.w(tag, "Failed to check via Settings.Secure - robust check", e)
     }
 
     Log.d(tag, "Accessibility service is not enabled")
