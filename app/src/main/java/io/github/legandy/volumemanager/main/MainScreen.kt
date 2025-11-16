@@ -1,77 +1,37 @@
 package io.github.legandy.volumemanager.main
 
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.legandy.volumemanager.core.MyApplication
-import io.github.legandy.volumemanager.main.MainActivity.OnboardingStep
 import io.github.legandy.volumemanager.settings.ui.SettingsScreen
 import io.github.legandy.volumemanager.setup.SetupScreen
-import io.github.legandy.volumemanager.setup.WaitingForShizukuScreen
+import io.github.legandy.volumemanager.setup.SetupViewModel
 
 @Composable
-fun MainScreen(
-    uiState: MainViewModel.MainUiState,
-    isLaunchedFromLauncher: Boolean,
-    onOpenAccessibilityClick: () -> Unit,
-    onOpenNotificationAccessClick: () -> Unit,
-    onGrantShizukuClickFromActivity: () -> Unit,
-    onGrantAllPermissionsClick: () -> Unit,
-    onNavigateToOnboardingStep: (OnboardingStep) -> Unit,
-    onOnboardingComplete: () -> Unit,
-    viewModel: MainViewModel
-) {
-    val lifecycleOwner = LocalLifecycleOwner.current
+fun MainScreen(setupViewModel: SetupViewModel = viewModel()) {
+    val uiState by setupViewModel.uiState.collectAsState()
 
-    // Permission launchers (remain in composable context due to rememberLauncherForActivityResult)
-    val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        // Update ViewModel after permission result
-        viewModel.onActivityResume()
-    }
-
-    // Lifecycle observer to refresh state on resume
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onActivityResume()
-                viewModel.onRefreshStatus()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    // Routing Logic
-    when {
-        !uiState.hasShizukuReady -> WaitingForShizukuScreen()
-        uiState.forceOnboardingRestart || (!uiState.isOnboardingCompleted && isLaunchedFromLauncher) -> {
-            SetupScreen(
-                currentStep = uiState.currentOnboardingStep,
-                onNavigateTo = onNavigateToOnboardingStep,
-                onOnboardingComplete = onOnboardingComplete,
-                hasShizukuPermission = uiState.shizukuPermission,
-                isAccessibilityEnabled = uiState.isAccessibilityEnabled,
-                hasNotificationAccess = uiState.hasNotificationAccess,
-                hasBluetooth = uiState.hasBluetoothPermission,
-                onGrantShizukuClick = onGrantShizukuClickFromActivity,
-                onOpenAccessibilityClick = onOpenAccessibilityClick,
-                onOpenNotificationAccessClick = onOpenNotificationAccessClick,
-                onGrantBluetoothClick = { bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) },
-                onGrantAllPermissionsClick = onGrantAllPermissionsClick,
-            )
-        }
-        else -> { // Onboarding completed or not launched from launcher
-            SettingsScreen(
-                settingsDataStore = MyApplication.settings,
-                manager = MyApplication.manager,
-            )
-        }
+    if (uiState.isOnboardingCompleted) {
+        SettingsScreen(
+            settingsDataStore = MyApplication.settings,
+            manager = MyApplication.manager,
+        )
+    } else {
+        SetupScreen(
+            currentStep = uiState.currentOnboardingStep,
+            onNavigateTo = setupViewModel::navigateToOnboardingStep,
+            onOnboardingComplete = setupViewModel::completeOnboarding,
+            hasShizukuPermission = uiState.shizukuPermission,
+            isAccessibilityEnabled = uiState.isAccessibilityEnabled,
+            hasNotificationAccess = uiState.hasNotificationAccess,
+            hasBluetooth = uiState.hasBluetoothPermission,
+            onGrantShizukuClick = { /* Handled by ShizukuPermissionScreen directly opening app */ },
+            onOpenAccessibilityClick = { /* Handled by AccessibilityPermissionScreen directly opening settings */ },
+            onOpenNotificationAccessClick = { /* Handled by NotificationPermissionScreen directly opening settings */ },
+            onGrantBluetoothClick = setupViewModel::requestBluetoothPermission,
+            onGrantAllPermissionsClick = setupViewModel::grantAllPermissionsWithShizuku
+        )
     }
 }

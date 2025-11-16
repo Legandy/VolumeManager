@@ -5,18 +5,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import io.github.legandy.volumemanager.core.MyApplication
 import io.github.legandy.volumemanager.overlay.OverlayService
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
-import android.provider.Settings
 
 class MainActivity : ComponentActivity() {
-
-    private val mainViewModel: MainViewModel by viewModels() // Instantiate ViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,50 +18,13 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        if (intent?.getBooleanExtra("EXTRA_RESTART_ONBOARDING", false) == true) {
-            mainViewModel.requestOnboardingRestart()
-            intent?.removeExtra("EXTRA_RESTART_ONBOARDING") // Clear the extra
-        }
-
         enableEdgeToEdge()
         setContent {
-            val isLaunchedFromLauncher = remember { // Moved remember block here
-                intent?.action == Intent.ACTION_MAIN && intent?.categories?.contains(Intent.CATEGORY_LAUNCHER) == true
-            }
-
-            val uiState by mainViewModel.uiState.collectAsState()
-
             VolumeManagerTheme {
-                MainScreen(
-                    uiState = uiState,
-                    isLaunchedFromLauncher = isLaunchedFromLauncher,
-                    onOpenAccessibilityClick = { openAccessibilitySettings() },
-                    onOpenNotificationAccessClick = { openNotificationAccessSettings() },
-                    onGrantShizukuClickFromActivity = { MyApplication.manager.requestShizukuPermission(this) },
-                    onGrantAllPermissionsClick = { mainViewModel.grantAllPermissionsWithShizuku() },
-                    onNavigateToOnboardingStep = mainViewModel::navigateToOnboardingStep,
-                    onOnboardingComplete = mainViewModel::completeOnboarding,
-                    viewModel = mainViewModel
-                )
+                // val mainViewModel: MainViewModel = viewModel() // Removed as MainScreen does not accept it
+                MainScreen()
             }
         }
-    }
-
-    enum class OnboardingStep {
-        Welcome,
-        Shizuku,
-        Accessibility,
-        Notification,
-        Bluetooth,
-        Complete
-    }
-
-    private fun openAccessibilitySettings() {
-        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    }
-
-    private fun openNotificationAccessSettings() {
-        startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     private fun isShortcutAction(action: String) = action.startsWith("io.github.legandy.volumemanager.action")

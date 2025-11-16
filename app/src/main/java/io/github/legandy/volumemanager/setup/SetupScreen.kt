@@ -48,14 +48,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.legandy.volumemanager.R
-import io.github.legandy.volumemanager.main.MainActivity
+import io.github.legandy.volumemanager.setup.SetupViewModel.OnboardingStep
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetupScreen(
-    currentStep: MainActivity.OnboardingStep,
-    onNavigateTo: (MainActivity.OnboardingStep) -> Unit,
+    currentStep: OnboardingStep,
+    onNavigateTo: (OnboardingStep) -> Unit,
     onOnboardingComplete: () -> Unit,
     hasShizukuPermission: Boolean,
     isAccessibilityEnabled: Boolean,
@@ -78,34 +78,34 @@ fun SetupScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             when (currentStep) {
-                MainActivity.OnboardingStep.Welcome -> WelcomeScreen(onGetStartedClick = {
-                    onNavigateTo(MainActivity.OnboardingStep.Shizuku)
+                OnboardingStep.Welcome -> WelcomeScreen(onGetStartedClick = {
+                    onNavigateTo(OnboardingStep.Shizuku)
                 })
-                MainActivity.OnboardingStep.Shizuku -> ShizukuPermissionScreen(
+                OnboardingStep.Shizuku -> ShizukuPermissionScreen(
                     hasShizuku = hasShizukuPermission,
                     onGrantShizukuClick = onGrantShizukuClick,
-                    onNextClick = { onNavigateTo(MainActivity.OnboardingStep.Accessibility) },
+                    onNextClick = { onNavigateTo(OnboardingStep.Accessibility) },
                     onGrantAllPermissionsClick = onGrantAllPermissionsClick // Pass the new parameter
                 )
-                MainActivity.OnboardingStep.Accessibility -> AccessibilityPermissionScreen(
+                OnboardingStep.Accessibility -> AccessibilityPermissionScreen(
                     hasAccessibility = isAccessibilityEnabled,
                     onOpenAccessibilityClick = onOpenAccessibilityClick,
-                    onSkipClick = { onNavigateTo(MainActivity.OnboardingStep.Notification) },
-                    onNextClick = { onNavigateTo(MainActivity.OnboardingStep.Notification) }
+                    onSkipClick = { onNavigateTo(OnboardingStep.Notification) },
+                    onNextClick = { onNavigateTo(OnboardingStep.Notification) }
                 )
-                MainActivity.OnboardingStep.Notification -> NotificationPermissionScreen(
+                OnboardingStep.Notification -> NotificationPermissionScreen(
                     hasNotificationAccess = hasNotificationAccess,
                     onOpenNotificationAccessClick = onOpenNotificationAccessClick,
-                    onSkipClick = { onNavigateTo(MainActivity.OnboardingStep.Bluetooth) },
-                    onNextClick = { onNavigateTo(MainActivity.OnboardingStep.Bluetooth) }
+                    onSkipClick = { onNavigateTo(OnboardingStep.Bluetooth) },
+                    onNextClick = { onNavigateTo(OnboardingStep.Bluetooth) }
                 )
-                MainActivity.OnboardingStep.Bluetooth -> BluetoothPermissionScreen(
+                OnboardingStep.Bluetooth -> BluetoothPermissionScreen(
                     hasBluetooth = hasBluetooth,
                     onGrantBluetoothClick = onGrantBluetoothClick,
-                    onSkipClick = { onNavigateTo(MainActivity.OnboardingStep.Complete) },
-                    onNextClick = { onNavigateTo(MainActivity.OnboardingStep.Complete) }
+                    onSkipClick = { onNavigateTo(OnboardingStep.Complete) },
+                    onNextClick = { onNavigateTo(OnboardingStep.Complete) }
                 )
-                MainActivity.OnboardingStep.Complete -> OnboardingCompleteScreen(onGoToAppClick = {onOnboardingComplete()})
+                OnboardingStep.Complete -> OnboardingCompleteScreen(onGoToAppClick = {onOnboardingComplete()})
             }
         }
     }

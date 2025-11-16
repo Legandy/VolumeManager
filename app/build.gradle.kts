@@ -79,6 +79,7 @@ dependencies {
 
     // Coroutines & DataStore
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.datastore.preferences)
 
     // Shizuku
