@@ -75,16 +75,28 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
         )
     }
 
-    //not working yet
     private fun getMediaOutputDeviceType(): Int {
         val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-        val device = devices.firstOrNull {
-            it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
-                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-                    it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+
+        // Prioritize Bluetooth A2DP
+        val bluetoothDevice = devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
+        if (bluetoothDevice != null) {
+            return bluetoothDevice.type
         }
-        return device?.type ?: AudioDeviceInfo.TYPE_UNKNOWN
+
+        // Then prioritize wired headphones/headset
+        val wiredHeadset = devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES || it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET }
+        if (wiredHeadset != null) {
+            return wiredHeadset.type
+        }
+
+        // Finally, default to built-in speaker if no other audio output is found
+        val speaker = devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+        if (speaker != null) {
+            return speaker.type
+        }
+
+        return AudioDeviceInfo.TYPE_UNKNOWN
     }
 
     fun setStreamVolume(streamType: Int, volume: Int) {
