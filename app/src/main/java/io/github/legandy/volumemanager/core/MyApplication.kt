@@ -2,13 +2,14 @@ package io.github.legandy.volumemanager.core
 
 import android.app.Application
 import android.content.Context
+import androidx.datastore.preferences.preferencesDataStore
 import io.github.legandy.volumemanager.app.appSettingsDataStore
 import io.github.legandy.volumemanager.settings.SettingsDataStore
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.ShizukuProvider
-import androidx.datastore.preferences.preferencesDataStore
 
 private val Context.appVolumesDataStore by preferencesDataStore(name = "app_volumes")
+private val Context.setupPreferencesDataStore by preferencesDataStore(name = "setup_preferences")
 
 class MyApplication : Application() {
 
@@ -24,6 +25,10 @@ class MyApplication : Application() {
                 instance.applicationContext,
                 instance.appVolumesDataStore
             )
+        }
+
+        val setupDataStore by lazy {
+            instance.setupPreferencesDataStore
         }
     }
 

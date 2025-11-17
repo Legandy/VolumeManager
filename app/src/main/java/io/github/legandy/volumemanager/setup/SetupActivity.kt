@@ -15,7 +15,7 @@ import io.github.legandy.volumemanager.main.MainActivity
 
 class SetupActivity : ComponentActivity() {
 
-    private val setupViewModel: SetupViewModel by viewModels()
+    private val setupViewModel: SetupViewModel by viewModels { SetupViewModelFactory() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +25,12 @@ class SetupActivity : ComponentActivity() {
             val uiState by setupViewModel.uiState.collectAsState()
 
             VolumeManagerTheme {
-                if (!uiState.hasShizukuReady) {
+                if (uiState.isOnboardingCompleted) {
+                    // Navigate to MainActivity directly if onboarding is complete
+                    val intent = Intent(this, MainActivity::class.java)
+                    startActivity(intent)
+                    finish() // Finish SetupActivity so it's not on the back stack
+                } else if (!uiState.hasShizukuReady) {
                     WaitingForShizukuScreen()
                 } else {
                     SetupScreen(

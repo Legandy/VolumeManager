@@ -37,6 +37,12 @@
             android:label="@string/app_settings_label"
             android:theme="@style/Theme.VolumeManager" />
 
+        <!-- SetupActivity declaration added -->
+        <activity
+            android:name=".setup.SetupActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VolumeManager" />
+
         <activity
             android:name=".actions.ShortcutActivity"
             android:exported="true"

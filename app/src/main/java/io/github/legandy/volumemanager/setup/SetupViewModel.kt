@@ -18,8 +18,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import android.app.Application
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import kotlinx.coroutines.flow.first
 
-class SetupViewModel(application: Application, private val savedStateHandle: SavedStateHandle) : AndroidViewModel(application) {
+class SetupViewModel(application: Application, private val savedStateHandle: SavedStateHandle, private val dataStore: DataStore<Preferences>) : AndroidViewModel(application) {
 
     private val manager: ShizukuManager = MyApplication.manager
 
@@ -27,20 +32,19 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     private val _uiState = MutableStateFlow(
         SetupUiState(
             currentOnboardingStep = savedStateHandle.get<OnboardingStep>(CURRENT_ONBOARDING_STEP_KEY) ?: OnboardingStep.Welcome,
-            isOnboardingCompleted = savedStateHandle.get<Boolean>(IS_ONBOARDING_COMPLETED_KEY) ?: false
+            isOnboardingCompleted = false // Temporary initial value, will be loaded from DataStore
         )
     )
     val uiState: StateFlow<SetupUiState> = _uiState.asStateFlow()
 
     init {
-        onActivityResume()
-
         viewModelScope.launch {
+            // Load isOnboardingCompleted from DataStore
+            val isOnboardingCompletedFromDataStore = dataStore.data.first()[IS_ONBOARDING_COMPLETED_DATASTORE_KEY] ?: false
+            _uiState.value = _uiState.value.copy(isOnboardingCompleted = isOnboardingCompletedFromDataStore)
+
             snapshotFlow { manager.shizukuReady }.collect { isReady ->
                 _uiState.value = _uiState.value.copy(hasShizukuReady = isReady)
-                if (isReady && !_uiState.value.shizukuPermission) {
-                    onActivityResume()
-                }
             }
         }
         viewModelScope.launch {
@@ -74,8 +78,12 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     }
 
     fun completeOnboarding() {
-        _uiState.value = _uiState.value.copy(isOnboardingCompleted = true)
-        savedStateHandle[IS_ONBOARDING_COMPLETED_KEY] = true
+        viewModelScope.launch {
+            dataStore.edit { preferences ->
+                preferences[IS_ONBOARDING_COMPLETED_DATASTORE_KEY] = true
+            }
+            _uiState.value = _uiState.value.copy(isOnboardingCompleted = true)
+        }
     }
 
     fun requestBluetoothPermission() {
@@ -121,6 +129,6 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     companion object {
         // Keys for SavedStateHandle
         private const val CURRENT_ONBOARDING_STEP_KEY = "currentOnboardingStep"
-        private const val IS_ONBOARDING_COMPLETED_KEY = "isOnboardingCompleted"
+        val IS_ONBOARDING_COMPLETED_DATASTORE_KEY = booleanPreferencesKey("is_onboarding_completed")
     }
 }
