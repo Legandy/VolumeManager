@@ -39,14 +39,6 @@
         <string name="notification_card_description">To change Ringer Mode &amp; DND.</string>
         <string name="notification_grant_button">Grant Notification Access</string>
 
-        <!-- Bluetooth Permission Screen -->
-        <string name="bluetooth_permission_title">Bluetooth Permission</string>
-        <string name="bluetooth_permission_description">Grant Bluetooth permission to enable detection of Bluetooth audio devices for specific volume profiles.</string>
-        <string name="bluetooth_card_title">Bluetooth Permission</string>
-        <string name="bluetooth_card_description">To detect Bluetooth devices.</string>
-        <string name="bluetooth_grant_button">Grant Bluetooth Permission</string>
-        <string name="bluetooth_finish_button">Finish</string>
-
         <!-- Onboarding Complete Screen -->
         <string name="onboarding_complete_title">You are All Set!</string>
         <string name="onboarding_complete_description">VolumeManager is now ready to use. You can change optional permissions later in settings.</string>

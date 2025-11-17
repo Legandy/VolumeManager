@@ -45,7 +45,6 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
             addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
             addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
             addAction("android.media.action.OUTPUT_DEVICE_CHANGED")
-            addAction("android.bluetooth.adapter.action.CONNECTION_STATE_CHANGED")
         }
         ContextCompat.registerReceiver(application, audioStateReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         refreshState()

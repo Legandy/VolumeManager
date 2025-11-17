@@ -1,10 +1,7 @@
 package io.github.legandy.volumemanager.setup
 
-import android.Manifest
 import android.content.ComponentName
 import android.content.Context
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -60,14 +57,9 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         _uiState.value = _uiState.value.copy(
             isAccessibilityEnabled = isAccessibilityServiceEnabled(getApplication()),
             hasNotificationAccess = checkNotificationAccess(),
-            hasBluetoothPermission = checkBluetoothPermission(),
             hasShizukuReady = manager.shizukuReady,
             shizukuPermission = manager.shizukuPermission
         )
-    }
-
-    private fun checkBluetoothPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun checkNotificationAccess(): Boolean {
@@ -99,13 +91,6 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         }
     }
 
-    fun requestBluetoothPermission() {
-        // This needs to be handled by the Activity, as ViewModel cannot directly launch permission requests
-        // The SetupActivity will use rememberLauncherForActivityResult to handle this.
-        // For now, we'll just refresh the status.
-        onActivityResume()
-    }
-
     fun grantAllPermissionsWithShizuku() {
         viewModelScope.launch {
             try {
@@ -125,7 +110,6 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         Shizuku,
         Accessibility,
         Notification,
-        Bluetooth,
         Complete
     }
 
@@ -134,7 +118,6 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         val shizukuPermission: Boolean = false,
         val isAccessibilityEnabled: Boolean = false,
         val hasNotificationAccess: Boolean = false,
-        val hasBluetoothPermission: Boolean = false,
         val isOnboardingCompleted: Boolean = false,
         val currentOnboardingStep: OnboardingStep = OnboardingStep.Welcome
     )

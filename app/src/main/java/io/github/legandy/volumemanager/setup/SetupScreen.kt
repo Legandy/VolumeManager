@@ -1,12 +1,7 @@
 package io.github.legandy.volumemanager.setup
 
-import android.Manifest
 import android.content.Intent
-//import android.net.Uri
 import android.provider.Settings
-import androidx.activity.compose.ManagedActivityResultLauncher
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
-import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Error
@@ -60,11 +54,9 @@ fun SetupScreen(
     hasShizukuPermission: Boolean,
     isAccessibilityEnabled: Boolean,
     hasNotificationAccess: Boolean,
-    hasBluetooth: Boolean,
     onGrantShizukuClick: () -> Unit,
     onOpenAccessibilityClick: () -> Unit,
     onOpenNotificationAccessClick: () -> Unit,
-    onGrantBluetoothClick: () -> Unit,
     onGrantAllPermissionsClick: () -> Unit // New parameter
 ) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_setup_title)) }) }) { padding ->
@@ -96,12 +88,6 @@ fun SetupScreen(
                 OnboardingStep.Notification -> NotificationPermissionScreen(
                     hasNotificationAccess = hasNotificationAccess,
                     onOpenNotificationAccessClick = onOpenNotificationAccessClick,
-                    onSkipClick = { onNavigateTo(OnboardingStep.Bluetooth) },
-                    onNextClick = { onNavigateTo(OnboardingStep.Bluetooth) }
-                )
-                OnboardingStep.Bluetooth -> BluetoothPermissionScreen(
-                    hasBluetooth = hasBluetooth,
-                    onGrantBluetoothClick = onGrantBluetoothClick,
                     onSkipClick = { onNavigateTo(OnboardingStep.Complete) },
                     onNextClick = { onNavigateTo(OnboardingStep.Complete) }
                 )
@@ -338,76 +324,6 @@ fun NotificationPermissionScreen(
 }
 
 @Composable
-fun BluetoothPermissionScreen(
-    hasBluetooth: Boolean,
-    onGrantBluetoothClick: () -> Unit,
-    onSkipClick: () -> Unit,
-    onNextClick: () -> Unit
-) {
-    val bluetoothPermissionLauncher: ManagedActivityResultLauncher<String, Boolean> =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-            onResult = { isGranted ->
-                if (isGranted) {
-                    onGrantBluetoothClick()
-                } else {
-                    // Handle permission denied
-                }
-            }
-        )
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Icon(
-            Icons.Filled.Bluetooth, // Example icon
-            contentDescription = null, // Decorative icon
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            stringResource(R.string.bluetooth_permission_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            stringResource(R.string.bluetooth_permission_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        StatusCard(
-            title = stringResource(R.string.bluetooth_card_title),
-            description = stringResource(R.string.bluetooth_card_description),
-            granted = hasBluetooth
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = {
-                bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !hasBluetooth
-        ) {
-            Text(stringResource(R.string.bluetooth_grant_button))
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            TextButton(onClick = onSkipClick) {
-                Text(stringResource(R.string.permission_skip_for_now_button))
-            }
-            Button(
-                onClick = onNextClick,
-                enabled = hasBluetooth
-            ) {
-                Text(stringResource(R.string.bluetooth_finish_button))
-            }
-        }
-    }
-}
-
-@Composable
 fun OnboardingCompleteScreen(onGoToAppClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -490,7 +406,7 @@ fun WaitingForShizukuScreen() { /* TODO: Implement actual waiting screen */
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = stringResource(R.string.shizuku_waiting_message),
-            style = MaterialTheme. typography.bodyLarge,
+            style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
     }

@@ -46,11 +46,9 @@ class SetupActivity : ComponentActivity() {
                         hasShizukuPermission = uiState.shizukuPermission,
                         isAccessibilityEnabled = uiState.isAccessibilityEnabled,
                         hasNotificationAccess = uiState.hasNotificationAccess,
-                        hasBluetooth = uiState.hasBluetoothPermission,
                         onGrantShizukuClick = { MyApplication.manager.requestShizukuPermission(this) },
                         onOpenAccessibilityClick = { openAccessibilitySettings() },
                         onOpenNotificationAccessClick = { openNotificationAccessSettings() },
-                        onGrantBluetoothClick = { setupViewModel.requestBluetoothPermission() },
                         onGrantAllPermissionsClick = { setupViewModel.grantAllPermissionsWithShizuku() }
                     )
                 }
