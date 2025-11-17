@@ -32,12 +32,12 @@
         <string name="accessibility_enable_button">Enable Accessibility Service</string>
         <string name="permission_skip_for_now_button">Skip for now</string>
 
-        <!-- Notification Permission Screen -->
-        <string name="notification_access_title">Notification Access</string>
-        <string name="notification_access_description">Grant Notification Access to allow VolumeManager to change Ringer Mode &amp; Do Not Disturb settings.</string>
-        <string name="notification_card_title">Notification Access</string>
-        <string name="notification_card_description">To change Ringer Mode &amp; DND.</string>
-        <string name="notification_grant_button">Grant Notification Access</string>
+        <!-- Notification Policy Access Screen (replaces Notification Access) -->
+        <string name="notification_policy_access_title">Notification Policy Access</string>
+        <string name="notification_policy_access_description">Grant Notification Policy Access to allow VolumeManager to change Ringer Mode &amp; Do Not Disturb settings.</string>
+        <string name="notification_policy_access_card_title">Notification Policy Access</string>
+        <string name="notification_policy_access_card_description">To change Ringer Mode &amp; DND.</string>
+        <string name="notification_policy_access_grant_button">Grant Notification Policy Access</string>
 
         <!-- Onboarding Complete Screen -->
         <string name="onboarding_complete_title">You are All Set!</string>

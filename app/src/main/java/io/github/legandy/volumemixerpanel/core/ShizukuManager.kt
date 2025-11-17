@@ -198,6 +198,31 @@ class ShizukuManager(
 
         throw SecurityException("Can't grant WRITE_SECURE_SETTINGS permission.")
     }
+    
+
+    fun grantNotificationPolicyPermission() {
+        var state = context.checkSelfPermission(android.Manifest.permission.ACCESS_NOTIFICATION_POLICY)
+        if (state == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "ACCESS_NOTIFICATION_POLICY already granted.")
+            return
+        }
+
+        try {
+            val process = Reflect.onClass(Shizuku::class.java).call("newProcess", arrayOf("pm", "grant", context.packageName, android.Manifest.permission.ACCESS_NOTIFICATION_POLICY), null, null).get<Process>()
+            process.waitFor()
+
+            state = context.checkSelfPermission(android.Manifest.permission.ACCESS_NOTIFICATION_POLICY)
+            if (state == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "ACCESS_NOTIFICATION_POLICY granted successfully via Shizuku.")
+                return
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to grant ACCESS_NOTIFICATION_POLICY via Shizuku: ${e.message}", e)
+            throw SecurityException("Can't grant ACCESS_NOTIFICATION_POLICY permission via Shizuku.")
+        }
+
+        throw SecurityException("Can't grant ACCESS_NOTIFICATION_POLICY permission.")
+    }
 
     fun enableAccessibilityService(componentName: ComponentName) {
         try {
@@ -237,41 +262,6 @@ class ShizukuManager(
         }
     }
 
-    fun enableNotificationListener(componentName: ComponentName) {
-        try {
-            var enabledNotificationListeners = Settings.Secure.getString(
-                context.contentResolver, "enabled_notification_listeners"
-            )
-
-            val serviceName = componentName.flattenToString()
-
-            if (enabledNotificationListeners.isNullOrBlank()) {
-                enabledNotificationListeners = serviceName
-            } else if (!enabledNotificationListeners.contains(serviceName)) {
-                enabledNotificationListeners += SERVICE_NAME_SEPARATOR + serviceName
-            } else {
-                Log.d(TAG, "Notification listener $serviceName already enabled.")
-                return // Already enabled
-            }
-
-            Settings.Secure.putString(
-                context.contentResolver,
-                "enabled_notification_listeners",
-                enabledNotificationListeners
-            )
-
-            val finalEnabledListeners = Settings.Secure.getString(
-                context.contentResolver, "enabled_notification_listeners"
-            )
-            if (finalEnabledListeners == null || !finalEnabledListeners.contains(serviceName)) {
-                throw SecurityException("Can't enable notification listener $serviceName")
-            }
-            Log.d(TAG, "Notification listener $serviceName enabled successfully.")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to enable notification listener: ${e.message}", e)
-            throw SecurityException("Failed to enable notification listener: ${e.message}", e)
-        }
-    }
 
     private fun handlePlaybackConfigs(configs: List<AudioPlaybackConfiguration>) {
         scope.launch {

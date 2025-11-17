@@ -19,6 +19,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import android.content.Intent
+import android.provider.Settings
 
 class SetupViewModel(application: Application, private val savedStateHandle: SavedStateHandle, private val dataStore: DataStore<Preferences>) : AndroidViewModel(application) {
 
@@ -56,13 +58,13 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     fun onActivityResume() {
         _uiState.value = _uiState.value.copy(
             isAccessibilityEnabled = isAccessibilityServiceEnabled(getApplication()),
-            hasNotificationAccess = checkNotificationAccess(),
+            hasNotificationPolicyAccess = checkNotificationPolicyAccess(),
             hasShizukuReady = manager.shizukuReady,
             shizukuPermission = manager.shizukuPermission
         )
     }
 
-    private fun checkNotificationAccess(): Boolean {
+    private fun checkNotificationPolicyAccess(): Boolean {
         return (getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).isNotificationPolicyAccessGranted
     }
 
@@ -96,12 +98,23 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
             try {
                 manager.grantWriteSecureSettingsPermission()
                 manager.enableAccessibilityService(ComponentName(getApplication<Application>().packageName, OverlayService::class.java.name))
-                manager.enableNotificationListener(ComponentName(getApplication<Application>().packageName, "io.github.legandy.volumemixerpanel.notification.NotificationListener"))
+                manager.grantNotificationPolicyPermission() // Grant Notification Policy Access
+                navigateToOnboardingStep(OnboardingStep.Complete) // Navigate to complete step after granting all
             } catch (e: SecurityException) {
                 e.printStackTrace()
             }
             onActivityResume()
-            completeOnboarding()
+        }
+    }
+
+    fun onOpenNotificationPolicyAccessClick() {
+        viewModelScope.launch {
+            try {
+                manager.grantNotificationPolicyPermission()
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+            }
+            // onActivityResume will be called from the Activity's onResume
         }
     }
 
@@ -109,7 +122,7 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         Welcome,
         Shizuku,
         Accessibility,
-        Notification,
+        NotificationPolicyAccess, // New step for DND access
         Complete
     }
 
@@ -117,7 +130,7 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         val hasShizukuReady: Boolean = false,
         val shizukuPermission: Boolean = false,
         val isAccessibilityEnabled: Boolean = false,
-        val hasNotificationAccess: Boolean = false,
+        val hasNotificationPolicyAccess: Boolean = false,
         val isOnboardingCompleted: Boolean = false,
         val currentOnboardingStep: OnboardingStep = OnboardingStep.Welcome
     )

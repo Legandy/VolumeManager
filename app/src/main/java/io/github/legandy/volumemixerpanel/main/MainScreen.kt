@@ -27,10 +27,10 @@ fun MainScreen(
             onOnboardingComplete = setupViewModel::completeOnboarding,
             hasShizukuPermission = uiState.shizukuPermission,
             isAccessibilityEnabled = uiState.isAccessibilityEnabled,
-            hasNotificationAccess = uiState.hasNotificationAccess,
+            hasNotificationPolicyAccess = uiState.hasNotificationPolicyAccess, // Changed parameter
             onGrantShizukuClick = { /* Handled by ShizukuPermissionScreen directly opening app */ },
             onOpenAccessibilityClick = { /* Handled by AccessibilityPermissionScreen directly opening settings */ },
-            onOpenNotificationAccessClick = { /* Handled by NotificationPermissionScreen directly opening settings */ },
+            onOpenNotificationPolicyAccessClick = setupViewModel::onOpenNotificationPolicyAccessClick, // Changed parameter
             onGrantAllPermissionsClick = setupViewModel::grantAllPermissionsWithShizuku
         )
     }

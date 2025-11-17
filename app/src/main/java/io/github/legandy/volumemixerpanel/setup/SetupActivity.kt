@@ -45,10 +45,13 @@ class SetupActivity : ComponentActivity() {
                         },
                         hasShizukuPermission = uiState.shizukuPermission,
                         isAccessibilityEnabled = uiState.isAccessibilityEnabled,
-                        hasNotificationAccess = uiState.hasNotificationAccess,
+                        hasNotificationPolicyAccess = uiState.hasNotificationPolicyAccess,
                         onGrantShizukuClick = { MyApplication.manager.requestShizukuPermission(this) },
                         onOpenAccessibilityClick = { openAccessibilitySettings() },
-                        onOpenNotificationAccessClick = { openNotificationAccessSettings() },
+                        onOpenNotificationPolicyAccessClick = {
+                            setupViewModel.onOpenNotificationPolicyAccessClick() // Call ViewModel to grant permission
+                            openNotificationPolicyAccessSettings() // Then open system settings
+                        },
                         onGrantAllPermissionsClick = { setupViewModel.grantAllPermissionsWithShizuku() }
                     )
                 }
@@ -65,7 +68,7 @@ class SetupActivity : ComponentActivity() {
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    private fun openNotificationAccessSettings() {
+    private fun openNotificationPolicyAccessSettings() {
         startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }

@@ -53,11 +53,11 @@ fun SetupScreen(
     onOnboardingComplete: () -> Unit,
     hasShizukuPermission: Boolean,
     isAccessibilityEnabled: Boolean,
-    hasNotificationAccess: Boolean,
+    hasNotificationPolicyAccess: Boolean, // Changed from hasNotificationAccess
     onGrantShizukuClick: () -> Unit,
     onOpenAccessibilityClick: () -> Unit,
-    onOpenNotificationAccessClick: () -> Unit,
-    onGrantAllPermissionsClick: () -> Unit // New parameter
+    onOpenNotificationPolicyAccessClick: () -> Unit, // Changed from onOpenNotificationAccessClick
+    onGrantAllPermissionsClick: () -> Unit
 ) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_setup_title)) }) }) { padding ->
         Column(
@@ -77,17 +77,17 @@ fun SetupScreen(
                     hasShizuku = hasShizukuPermission,
                     onGrantShizukuClick = onGrantShizukuClick,
                     onNextClick = { onNavigateTo(OnboardingStep.Accessibility) },
-                    onGrantAllPermissionsClick = onGrantAllPermissionsClick // Pass the new parameter
+                    onGrantAllPermissionsClick = onGrantAllPermissionsClick
                 )
                 OnboardingStep.Accessibility -> AccessibilityPermissionScreen(
                     hasAccessibility = isAccessibilityEnabled,
                     onOpenAccessibilityClick = onOpenAccessibilityClick,
-                    onSkipClick = { onNavigateTo(OnboardingStep.Notification) },
-                    onNextClick = { onNavigateTo(OnboardingStep.Notification) }
+                    onSkipClick = { onNavigateTo(OnboardingStep.NotificationPolicyAccess) }, // Changed navigation
+                    onNextClick = { onNavigateTo(OnboardingStep.NotificationPolicyAccess) } // Changed navigation
                 )
-                OnboardingStep.Notification -> NotificationPermissionScreen(
-                    hasNotificationAccess = hasNotificationAccess,
-                    onOpenNotificationAccessClick = onOpenNotificationAccessClick,
+                OnboardingStep.NotificationPolicyAccess -> NotificationPolicyAccessScreen( // Changed branch and composable name
+                    hasNotificationPolicyAccess = hasNotificationPolicyAccess, // Changed parameter
+                    onOpenNotificationPolicyAccessClick = onOpenNotificationPolicyAccessClick, // Changed parameter
                     onSkipClick = { onNavigateTo(OnboardingStep.Complete) },
                     onNextClick = { onNavigateTo(OnboardingStep.Complete) }
                 )
@@ -134,7 +134,7 @@ fun ShizukuPermissionScreen(
     hasShizuku: Boolean,
     onGrantShizukuClick: () -> Unit,
     onNextClick: () -> Unit,
-    onGrantAllPermissionsClick: () -> Unit // New parameter
+    onGrantAllPermissionsClick: () -> Unit
 ) {
     val context = LocalContext.current
     val shizukuIntent = remember {
@@ -185,7 +185,7 @@ fun ShizukuPermissionScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = hasShizuku // Only enabled if Shizuku is granted
         ) {
-            Text(stringResource(R.string.grant_all_permissions_button)) // This string needs to be added
+            Text(stringResource(R.string.grant_all_permissions_button))
         }
         Button(
             onClick = onNextClick,
@@ -261,14 +261,14 @@ fun AccessibilityPermissionScreen(
 }
 
 @Composable
-fun NotificationPermissionScreen(
-    hasNotificationAccess: Boolean,
-    onOpenNotificationAccessClick: () -> Unit,
+fun NotificationPolicyAccessScreen( // Renamed composable
+    hasNotificationPolicyAccess: Boolean, // Changed parameter
+    onOpenNotificationPolicyAccessClick: () -> Unit, // Changed parameter
     onSkipClick: () -> Unit,
     onNextClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val intent = remember { Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
+    val intent = remember { Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) } // Changed intent
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -281,30 +281,30 @@ fun NotificationPermissionScreen(
             tint = MaterialTheme.colorScheme.primary
         )
         Text(
-            stringResource(R.string.notification_access_title),
+            stringResource(R.string.notification_policy_access_title), // New string resource needed
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Text(
-            stringResource(R.string.notification_access_description),
+            stringResource(R.string.notification_policy_access_description), // New string resource needed
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         StatusCard(
-            title = stringResource(R.string.notification_card_title),
-            description = stringResource(R.string.notification_card_description),
-            granted = hasNotificationAccess
+            title = stringResource(R.string.notification_policy_access_card_title), // New string resource needed
+            description = stringResource(R.string.notification_policy_access_card_description), // New string resource needed
+            granted = hasNotificationPolicyAccess // Changed parameter
         )
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
-                onOpenNotificationAccessClick()
+                onOpenNotificationPolicyAccessClick() // Changed callback
                 context.startActivity(intent)
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !hasNotificationAccess
+            enabled = !hasNotificationPolicyAccess // Changed parameter
         ) {
-            Text(stringResource(R.string.notification_grant_button))
+            Text(stringResource(R.string.notification_policy_access_grant_button))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -315,7 +315,7 @@ fun NotificationPermissionScreen(
             }
             Button(
                 onClick = onNextClick,
-                enabled = hasNotificationAccess
+                enabled = hasNotificationPolicyAccess // Changed parameter
             ) {
                 Text(stringResource(R.string.shizuku_next_button))
             }
