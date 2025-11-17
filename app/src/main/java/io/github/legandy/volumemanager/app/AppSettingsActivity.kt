@@ -1,7 +1,7 @@
 package io.github.legandy.volumemanager.app
 
 import android.app.Application
-import android.content.Intent
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,9 +18,8 @@ import io.github.legandy.volumemanager.core.MyApplication
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import io.github.legandy.volumemanager.main.MainActivity // Import MainActivity
-import io.github.legandy.volumemanager.setup.SetupViewModel // Import SetupViewModel
-import io.github.legandy.volumemanager.setup.SetupViewModelFactory // Import SetupViewModelFactory
+import io.github.legandy.volumemanager.setup.SetupViewModel
+import io.github.legandy.volumemanager.setup.SetupViewModelFactory
 
 class AppSettingsActivity : ComponentActivity() {
 
@@ -54,7 +53,7 @@ class AppSettingsActivity : ComponentActivity() {
                         onDismissThemeDialog = { appSettingsViewModel.showThemeSelectionDialog(false) },
                         onResetOnboardingRequested = {
                             setupViewModel.resetOnboarding()
-                            finish() // Close AppSettingsActivity after resetting onboarding
+                            finish()
                         }
                     )
                 }

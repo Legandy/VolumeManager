@@ -5,7 +5,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.legandy.volumemanager.core.MyApplication
-import io.github.legandy.volumemanager.settings.ui.SettingsScreen
+import io.github.legandy.volumemanager.settings.SettingsScreen
 import io.github.legandy.volumemanager.setup.SetupScreen
 import io.github.legandy.volumemanager.setup.SetupViewModel
 

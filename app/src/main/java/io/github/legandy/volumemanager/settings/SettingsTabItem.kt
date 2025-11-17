@@ -1,4 +1,4 @@
-package io.github.legandy.volumemanager.settings.ui
+package io.github.legandy.volumemanager.settings
 
 import androidx.compose.ui.graphics.vector.ImageVector
 

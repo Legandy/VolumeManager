@@ -1,4 +1,4 @@
-package io.github.legandy.volumemanager.settings.ui
+package io.github.legandy.volumemanager.settings
 
 import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -70,10 +70,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.legandy.volumemanager.R
 import io.github.legandy.volumemanager.app.AppSettingsActivity
 import io.github.legandy.volumemanager.core.ShizukuManager
-import io.github.legandy.volumemanager.settings.AppFilterMode
-import io.github.legandy.volumemanager.settings.InstalledAppData
-import io.github.legandy.volumemanager.settings.SettingsDataStore
-import io.github.legandy.volumemanager.settings.SettingsViewModel
+import io.github.legandy.volumemanager.settings.SettingsTabItem
 import kotlinx.coroutines.launch
 
 @Composable

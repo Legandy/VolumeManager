@@ -9,7 +9,6 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import io.github.legandy.volumemanager.core.ShizukuManager
-import io.github.legandy.volumemanager.settings.ui.SettingsScreen
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 
 class SettingsActivity : ComponentActivity() {

@@ -25,7 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.legandy.volumemanager.R
 import io.github.legandy.volumemanager.settings.ThemeMode
-import io.github.legandy.volumemanager.settings.ui.SettingClickableItem
+import io.github.legandy.volumemanager.settings.SettingClickableItem
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
