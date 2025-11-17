@@ -88,6 +88,8 @@ import io.github.legandy.volumemixerpanel.settings.AppFilterMode
 import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 import kotlinx.coroutines.launch
+import io.github.legandy.volumemixerpanel.R
+import androidx.compose.ui.res.stringResource
 
 private enum class OverlayTab { SYSTEM, APPS }
 
@@ -185,7 +187,7 @@ private fun OverlayContent(
                             context.startActivity(intent)
                             hideView()
                         } catch (e: ActivityNotFoundException) {
-                            Toast.makeText(context, "Output switcher not available", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.output_switcher_not_available, Toast.LENGTH_SHORT).show()
                         }
                     }) {
                         Icon(Icons.Default.SpeakerGroup, contentDescription = "Media Output")
@@ -197,11 +199,11 @@ private fun OverlayContent(
                     val isSystemSelected = selectedTab == OverlayTab.SYSTEM
                     if (isSystemSelected) {
                         FilledTonalIconButton(onClick = { /* Already selected */ }) {
-                            Icon(Icons.Filled.Podcasts, "System", modifier = Modifier.size(32.dp))
+                            Icon(Icons.Filled.Podcasts, "System Tab", modifier = Modifier.size(32.dp))
                         }
                     } else {
                         IconButton(onClick = { selectedTab = OverlayTab.SYSTEM; resetTimer() }) {
-                            Icon(Icons.Outlined.Podcasts, "System", modifier = Modifier.size(32.dp))
+                            Icon(Icons.Outlined.Podcasts, "System Tab", modifier = Modifier.size(32.dp))
                         }
                     }
 
@@ -210,11 +212,11 @@ private fun OverlayContent(
                     val isAppsSelected = selectedTab == OverlayTab.APPS
                     if (isAppsSelected) {
                         FilledTonalIconButton(onClick = { /* Already selected */ }) {
-                            Icon(Icons.Filled.Apps, "Apps", modifier = Modifier.size(32.dp))
+                            Icon(Icons.Filled.Apps, "App Tab", modifier = Modifier.size(32.dp))
                         }
                     } else {
                         IconButton(onClick = { selectedTab = OverlayTab.APPS; resetTimer() }) {
-                            Icon(Icons.Outlined.Apps, "Apps", modifier = Modifier.size(32.dp))
+                            Icon(Icons.Outlined.Apps, "App Tab", modifier = Modifier.size(32.dp))
                         }
                     }
                 }
@@ -227,7 +229,7 @@ private fun OverlayContent(
                     }) {
                         Icon(
                             imageVector = if (uiState.isDndOn) Icons.Filled.DoNotDisturbOn else Icons.Outlined.DoNotDisturbOn,
-                            contentDescription = "Do Not Disturb",
+                            contentDescription = "Do not disturb mode",
                             tint = if(uiState.isDndOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -287,7 +289,7 @@ private fun AppVolumeSliders(manager: ShizukuManager, settingsDataStore: Setting
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No apps are currently playing audio.",
+                    text = stringResource(R.string.No_apps_are_currently_playing_audio),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center

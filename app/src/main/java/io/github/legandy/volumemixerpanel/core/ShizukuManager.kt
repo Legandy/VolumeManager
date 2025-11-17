@@ -41,7 +41,7 @@ class ShizukuManager(
     private val volumesDataStore: DataStore<Preferences>
 ) {
     companion object {
-        private const val TAG = "VolumeManager.Manager"
+        private const val TAG = "VolumeMixerPanel.ShizukuManager"
         private const val SHIZUKU_REQ_CODE = 42
         private const val SERVICE_NAME_SEPARATOR = ":"
         private var getClientPidMethod: Method? = null

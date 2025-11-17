@@ -42,7 +42,6 @@ fun AppSettingsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_settings_label)) },
                 actions = {
-                    // No action buttons in the TopAppBar for AppSettingsScreen
                 }
             )
         }

@@ -52,8 +52,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Ensure that the onboarding status is always up-to-date when returning to MainActivity
-        // This is important in case the user navigates back from SetupActivity after completing onboarding
         setupViewModel.onActivityResume()
     }
 

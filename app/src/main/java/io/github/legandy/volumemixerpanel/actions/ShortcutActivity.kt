@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 import io.github.legandy.volumemixerpanel.R
+import androidx.compose.ui.res.stringResource
 
 
 class ShortcutActivity : ComponentActivity() {
@@ -36,16 +37,22 @@ class ShortcutActivity : ComponentActivity() {
 
     @Composable
     private fun ShortcutScreen() {
+        // 1. Resolve the String resource IDs into actual String values
+        val showOverlayLabel = stringResource(id = R.string.show_overlay)
+        val hideOverlayLabel = stringResource(id = R.string.hide_overlay)
+        val toggleOverlayLabel = stringResource(id = R.string.toggle_overlay)
+
+        // 2. Update the ShortcutInfo list to use the resolved String variables
         val shortcuts = listOf(
-            ShortcutInfo(R.string.show_overlay, ACTION_SHOW_OVERLAY, Icons.Default.PlayArrow),
-            ShortcutInfo(R.string.hide_overlay, ACTION_HIDE_OVERLAY, Icons.Default.Stop),
-            ShortcutInfo(R.string.toggle_overlay, ACTION_TOGGLE_OVERLAY, Icons.AutoMirrored.Filled.ArrowForward)
+            ShortcutInfo(showOverlayLabel, ACTION_SHOW_OVERLAY, Icons.Default.PlayArrow),
+            ShortcutInfo(hideOverlayLabel, ACTION_HIDE_OVERLAY, Icons.Default.Stop),
+            ShortcutInfo(toggleOverlayLabel, ACTION_TOGGLE_OVERLAY, Icons.AutoMirrored.Filled.ArrowForward)
         )
 
         Surface {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Create Volume Shortcut",
+                    text = stringResource(id = R.string.create_volume_shortcut),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(16.dp)
                 )

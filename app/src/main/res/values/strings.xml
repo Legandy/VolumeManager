@@ -54,11 +54,19 @@
     <string name="no_active_audio_description">Start playing media to control individual app volumes.</string>
 
     //OverlayScreen
+    <string name="No_apps_are_currently_playing_audio">No apps are currently playing audio</string>
+    <string name="output_switcher_not_available">Output switcher not available</string>
+
+
+
+
 
     //ShortcutActivity
     <string name="show_overlay">Show Overlay</string>
     <string name="hide_overlay">Hide Overlay</string>
     <string name="toggle_overlay">Toggle Overlay</string>
+    <string name="create_volume_shortcut">Create Volume Panel Shortcut</string>
+
 
 
     //AppSettingsScreen
