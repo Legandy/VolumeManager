@@ -157,8 +157,8 @@ private fun OverlayContent(
                     label = "overlay-tab-content"
                 ) { tab ->
                     when (tab) {
-                        OverlayTab.SYSTEM -> SystemVolumeSliders(overlayViewModel, pauseTimer, resumeTimer)
-                        OverlayTab.APPS -> AppVolumeSliders(manager, settingsDataStore, pauseTimer, resumeTimer)
+                        OverlayTab.SYSTEM -> SystemVolumeSliders(overlayViewModel, pauseTimer, resumeTimer, resetTimer)
+                        OverlayTab.APPS -> AppVolumeSliders(manager, settingsDataStore, pauseTimer, resumeTimer, resetTimer)
                     }
                 }
             }
@@ -177,6 +177,7 @@ private fun OverlayContent(
                         val intent = Intent(context, MainActivity::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP) }
                         context.startActivity(intent)
                         hideView()
+                        resetTimer()
                     }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
@@ -186,6 +187,7 @@ private fun OverlayContent(
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(intent)
                             hideView()
+                            resetTimer()
                         } catch (e: ActivityNotFoundException) {
                             Toast.makeText(context, R.string.output_switcher_not_available, Toast.LENGTH_SHORT).show()
                         }
@@ -233,7 +235,7 @@ private fun OverlayContent(
                             tint = if(uiState.isDndOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(onClick = { hideView() }) {
+                    IconButton(onClick = { hideView(); resetTimer() }) {
                         Icon(Icons.Default.Check, contentDescription = "Done")
                     }
                 }
@@ -243,7 +245,7 @@ private fun OverlayContent(
 }
 
 @Composable
-private fun SystemVolumeSliders(overlayViewModel: OverlayViewModel, pauseTimer: () -> Unit, resumeTimer: () -> Unit) {
+private fun SystemVolumeSliders(overlayViewModel: OverlayViewModel, pauseTimer: () -> Unit, resumeTimer: () -> Unit, resetTimer: () -> Unit) {
     val uiState by overlayViewModel.uiState.collectAsState()
 
     Column(
@@ -252,15 +254,15 @@ private fun SystemVolumeSliders(overlayViewModel: OverlayViewModel, pauseTimer: 
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StreamSliderRow(AudioManager.STREAM_MUSIC, uiState, overlayViewModel, pauseTimer, resumeTimer)
-        StreamSliderRow(AudioManager.STREAM_RING, uiState, overlayViewModel, pauseTimer, resumeTimer)
-        StreamSliderRow(AudioManager.STREAM_ALARM, uiState, overlayViewModel, pauseTimer, resumeTimer)
-        StreamSliderRow(AudioManager.STREAM_VOICE_CALL, uiState, overlayViewModel, pauseTimer, resumeTimer)
+        StreamSliderRow(AudioManager.STREAM_MUSIC, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer)
+        StreamSliderRow(AudioManager.STREAM_RING, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer)
+        StreamSliderRow(AudioManager.STREAM_ALARM, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer)
+        StreamSliderRow(AudioManager.STREAM_VOICE_CALL, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer)
     }
 }
 
 @Composable
-private fun AppVolumeSliders(manager: ShizukuManager, settingsDataStore: SettingsDataStore, pauseTimer: () -> Unit, resumeTimer: () -> Unit) {
+private fun AppVolumeSliders(manager: ShizukuManager, settingsDataStore: SettingsDataStore, pauseTimer: () -> Unit, resumeTimer: () -> Unit, resetTimer: () -> Unit) {
     val filterMode by settingsDataStore.appFilterMode.collectAsState(initial = AppFilterMode.SHOW_ALL)
     val blacklist by settingsDataStore.appBlacklist.collectAsState(initial = emptySet())
     val whitelist by settingsDataStore.appWhitelist.collectAsState(initial = emptySet())
@@ -298,7 +300,7 @@ private fun AppVolumeSliders(manager: ShizukuManager, settingsDataStore: Setting
         }
         else {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                activeApps.forEach { app -> AppSliderRow(app = app, manager = manager, settingsDataStore = settingsDataStore, lastAppVolumes = lastAppVolumes, pauseTimer = pauseTimer, resumeTimer = resumeTimer) }
+                activeApps.forEach { app -> AppSliderRow(app = app, manager = manager, settingsDataStore = settingsDataStore, lastAppVolumes = lastAppVolumes, pauseTimer = pauseTimer, resumeTimer = resumeTimer, resetTimer = resetTimer) }
             }
         }
     }
@@ -310,7 +312,8 @@ private fun StreamSliderRow(
     uiState: SystemAudioUiState,
     overlayViewModel: OverlayViewModel,
     pauseTimer: () -> Unit,
-    resumeTimer: () -> Unit
+    resumeTimer: () -> Unit,
+    resetTimer: () -> Unit
 ) {
     val maxVolume = uiState.maxVolumes[streamType] ?: 15
     var currentVolume by remember(uiState.volumes[streamType]) { mutableIntStateOf(uiState.volumes[streamType] ?: 0) }
@@ -355,6 +358,7 @@ private fun StreamSliderRow(
                     sliderEnabled = false
                     onIconClick = {
                         overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_SILENT)
+                        resetTimer()
                     }
                 }
                 AudioManager.RINGER_MODE_SILENT -> {
@@ -362,6 +366,7 @@ private fun StreamSliderRow(
                     sliderEnabled = false
                     onIconClick = {
                         overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
+                        resetTimer()
                     }
                 }
                 else -> { // RINGER_MODE_NORMAL
@@ -369,6 +374,7 @@ private fun StreamSliderRow(
                     sliderEnabled = true
                     onIconClick = {
                         overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
+                        resetTimer()
                     }
                 }
             }
@@ -385,13 +391,14 @@ private fun StreamSliderRow(
             onIconClick = {
                 val direction = if (isMuted) AudioManager.ADJUST_UNMUTE else AudioManager.ADJUST_MUTE
                 overlayViewModel.adjustStreamVolume(streamType, direction)
+                resetTimer()
             }
         }
         AudioManager.STREAM_ALARM -> {
             name = "Alarm"
             icon = Icons.Default.Alarm
             sliderEnabled = true
-            onIconClick = null
+            onIconClick = null // No action here to reset timer
         }
         else -> { // Handles STREAM_VOICE_CALL
             name = "Call"
@@ -400,6 +407,7 @@ private fun StreamSliderRow(
             onIconClick = {
                 val direction = if (isMuted) AudioManager.ADJUST_UNMUTE else AudioManager.ADJUST_MUTE
                 overlayViewModel.adjustStreamVolume(streamType, direction)
+                resetTimer()
             }
         }
     }
@@ -440,7 +448,7 @@ private fun StreamSliderRow(
         }
         Slider(
             value = displayVolume.toFloat(),
-            onValueChange = { newVol -> currentVolume = newVol.toInt() },
+            onValueChange = { newVol -> currentVolume = newVol.toInt(); resetTimer() },
             onValueChangeFinished = {
                 try {
                     if (streamType == AudioManager.STREAM_RING) {
@@ -459,6 +467,7 @@ private fun StreamSliderRow(
                     }
                 } catch (e: Exception) { Log.e("VolumeManager.Service", "onValueChangeFinished failed", e) }
                 resumeTimer()
+                resetTimer()
             },
             interactionSource = interactionSource,
             valueRange = 0f..maxVolume.toFloat(),
@@ -483,7 +492,8 @@ private fun AppSliderRow(
     settingsDataStore: SettingsDataStore,
     lastAppVolumes: Map<String, Float>,
     pauseTimer: () -> Unit,
-    resumeTimer: () -> Unit
+    resumeTimer: () -> Unit,
+    resetTimer: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
@@ -529,6 +539,7 @@ private fun AppSliderRow(
                     }
                 }
                 resumeTimer()
+                resetTimer()
             },
             modifier = Modifier.padding(start = 16.dp)
         ) {
@@ -548,8 +559,9 @@ private fun AppSliderRow(
                     lastVolume = newVol
                     scope.launch { settingsDataStore.setLastAppVolume(app.packageName, newVol) }
                 }
+                resetTimer()
             },
-            onValueChangeFinished = { resumeTimer() },
+            onValueChangeFinished = { resumeTimer(); resetTimer() },
             interactionSource = interactionSource,
             valueRange = 0f..1f,
             modifier = Modifier.weight(1f)
