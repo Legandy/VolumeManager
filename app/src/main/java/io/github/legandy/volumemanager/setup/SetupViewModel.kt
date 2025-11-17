@@ -39,10 +39,13 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
 
     init {
         viewModelScope.launch {
-            // Load isOnboardingCompleted from DataStore
-            val isOnboardingCompletedFromDataStore = dataStore.data.first()[IS_ONBOARDING_COMPLETED_DATASTORE_KEY] ?: false
-            _uiState.value = _uiState.value.copy(isOnboardingCompleted = isOnboardingCompletedFromDataStore)
-
+            // Continuously collect isOnboardingCompleted from DataStore
+            dataStore.data.collect { preferences ->
+                val isOnboardingCompletedFromDataStore = preferences[IS_ONBOARDING_COMPLETED_DATASTORE_KEY] ?: false
+                _uiState.value = _uiState.value.copy(isOnboardingCompleted = isOnboardingCompletedFromDataStore)
+            }
+        }
+        viewModelScope.launch {
             snapshotFlow { manager.shizukuReady }.collect { isReady ->
                 _uiState.value = _uiState.value.copy(hasShizukuReady = isReady)
             }
@@ -83,6 +86,17 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
                 preferences[IS_ONBOARDING_COMPLETED_DATASTORE_KEY] = true
             }
             _uiState.value = _uiState.value.copy(isOnboardingCompleted = true)
+        }
+    }
+
+    fun resetOnboarding() {
+        viewModelScope.launch {
+            dataStore.edit { preferences ->
+                preferences[IS_ONBOARDING_COMPLETED_DATASTORE_KEY] = false
+            }
+            _uiState.value = _uiState.value.copy(isOnboardingCompleted = false)
+            _uiState.value = _uiState.value.copy(currentOnboardingStep = OnboardingStep.Welcome)
+            savedStateHandle[CURRENT_ONBOARDING_STEP_KEY] = OnboardingStep.Welcome
         }
     }
 

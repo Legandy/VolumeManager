@@ -13,7 +13,6 @@ import io.github.legandy.volumemanager.overlay.OverlayService
 import io.github.legandy.volumemanager.setup.SetupActivity
 import io.github.legandy.volumemanager.setup.SetupViewModel
 import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
-import io.github.legandy.volumemanager.core.MyApplication
 import io.github.legandy.volumemanager.setup.SetupViewModelFactory
 
 class MainActivity : ComponentActivity() {

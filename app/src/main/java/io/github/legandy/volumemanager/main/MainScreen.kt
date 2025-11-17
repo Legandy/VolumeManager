@@ -10,13 +10,15 @@ import io.github.legandy.volumemanager.setup.SetupScreen
 import io.github.legandy.volumemanager.setup.SetupViewModel
 
 @Composable
-fun MainScreen(setupViewModel: SetupViewModel = viewModel()) {
+fun MainScreen(
+    setupViewModel: SetupViewModel = viewModel()
+) {
     val uiState by setupViewModel.uiState.collectAsState()
 
     if (uiState.isOnboardingCompleted) {
         SettingsScreen(
             settingsDataStore = MyApplication.settings,
-            manager = MyApplication.manager,
+            manager = MyApplication.manager
         )
     } else {
         SetupScreen(

@@ -35,7 +35,8 @@ fun AppSettingsScreen(
     onShowSetupRequested: () -> Unit,
     onThemeSettingClick: () -> Unit,
     onThemeSelected: (ThemeMode) -> Unit,
-    onDismissThemeDialog: () -> Unit
+    onDismissThemeDialog: () -> Unit,
+    onResetOnboardingRequested: () -> Unit // New parameter
 ) {
     Scaffold(
         topBar = {
@@ -60,6 +61,11 @@ fun AppSettingsScreen(
                             ThemeMode.DARK -> stringResource(R.string.theme_dark)
                         },
                         onClick = onThemeSettingClick,
+                        showDivider = true // Changed to true for consistency with new item
+                    )
+                    SettingClickableItem(
+                        title = stringResource(R.string.show_setup_onboarding_content_description),
+                        onClick = onShowSetupRequested,
                         showDivider = false
                     )
                 }
@@ -68,8 +74,8 @@ fun AppSettingsScreen(
             Card(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Column {
                     SettingClickableItem(
-                        title = stringResource(R.string.show_setup_onboarding_content_description),
-                        onClick = onShowSetupRequested,
+                        title = stringResource(R.string.setting_reset_onboarding_title), // New string resource needed
+                        onClick = onResetOnboardingRequested,
                         showDivider = false
                     )
                 }
@@ -145,7 +151,8 @@ fun AppSettingsPreview() {
             onShowSetupRequested = {},
             onThemeSettingClick = {},
             onThemeSelected = {},
-            onDismissThemeDialog = {}
+            onDismissThemeDialog = {},
+            onResetOnboardingRequested = {} // Placeholder for the new parameter
         )
     }
 }

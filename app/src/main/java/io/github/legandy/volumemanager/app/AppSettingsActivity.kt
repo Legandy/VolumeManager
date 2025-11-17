@@ -19,6 +19,8 @@ import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import io.github.legandy.volumemanager.main.MainActivity // Import MainActivity
+import io.github.legandy.volumemanager.setup.SetupViewModel // Import SetupViewModel
+import io.github.legandy.volumemanager.setup.SetupViewModelFactory // Import SetupViewModelFactory
 
 class AppSettingsActivity : ComponentActivity() {
 
@@ -28,6 +30,8 @@ class AppSettingsActivity : ComponentActivity() {
     private val appSettingsViewModel: AppSettingsViewModel by viewModels { 
         AppSettingsViewModelFactory(application, settingsDataStore) 
     }
+
+    private val setupViewModel: SetupViewModel by viewModels { SetupViewModelFactory() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +59,11 @@ class AppSettingsActivity : ComponentActivity() {
                         },
                         onThemeSettingClick = { appSettingsViewModel.showThemeSelectionDialog(true) },
                         onThemeSelected = { newTheme -> appSettingsViewModel.selectThemeMode(newTheme) },
-                        onDismissThemeDialog = { appSettingsViewModel.showThemeSelectionDialog(false) }
+                        onDismissThemeDialog = { appSettingsViewModel.showThemeSelectionDialog(false) },
+                        onResetOnboardingRequested = {
+                            setupViewModel.resetOnboarding()
+                            finish() // Close AppSettingsActivity after resetting onboarding
+                        }
                     )
                 }
             }

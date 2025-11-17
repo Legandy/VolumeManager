@@ -72,6 +72,7 @@
     <string name="theme_dark">Dark</string>
     <string name="select_theme_dialog_title">Select Theme</string>
     <string name="dialog_cancel_button">Cancel</string>
+    <string name="setting_reset_onboarding_title">Reset Onboarding</string>
 
 
     //AboutActivity
