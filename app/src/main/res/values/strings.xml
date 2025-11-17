@@ -3,7 +3,7 @@
 
     //MainActivity
         <!-- App Name -->
-        <string name="app_name">Volume Manager</string>
+        <string name="app_name">Volume Mixer Panel</string>
 
         <!-- Onboarding Flow -->
         <string name="onboarding_setup_title">Volume Manager Setup</string>
@@ -49,14 +49,19 @@
         <string name="status_icon_not_granted">Permission not granted</string>
 
 
-    //SettingsComponents
+    //SettingsScreen
+    <string name="no_active_audio_title">No Active Audio</string>
+    <string name="no_active_audio_description">Start playing media to control individual app volumes.</string>
 
-    //OverlayService
+    //OverlayScreen
 
     //ShortcutActivity
+    <string name="show_overlay">Show Overlay</string>
+    <string name="hide_overlay">Hide Overlay</string>
+    <string name="toggle_overlay">Toggle Overlay</string>
 
 
-    //AppSettingsActivity
+    //AppSettingsScreen
     <string name="show_setup_onboarding_content_description">Show Setup and Onboarding</string>
     <string name="setting_theme_mode_title">Theme Mode</string>
     <string name="theme_system_default">System Default</string>
@@ -83,8 +88,7 @@
     <string name="enable_accessibility_message">Please enable the Accessibility setting to allow the overlay.</string>
     <string name="unknown_action">Unknown shortcut action.</string>
     <string name="create_shortcut_label">Volume Control Shortcut</string>
-    <string name="no_active_audio_title">No Active Audio</string>
-    <string name="no_active_audio_description">Start playing media to control individual app volumes.</string>
+
 
 
 

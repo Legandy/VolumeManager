@@ -7,9 +7,9 @@
         android:shortcutShortLabel="@string/show_overlay_short"
         android:shortcutLongLabel="@string/show_overlay_long">
         <intent
-            android:action="io.github.legandy.volumemanager.action.SHOW_OVERLAY"
-            android:targetPackage="io.github.legandy.volumemanager"
-            android:targetClass="io.github.legandy.volumemanager.actions.ActionReceiver" />
+            android:action="volumemixerpanel.action.SHOW_OVERLAY"
+            android:targetPackage="volumemixerpanel"
+            android:targetClass="volumemixerpanel.actions.ActionReceiver" />
     </shortcut>
 
     <shortcut
@@ -19,9 +19,9 @@
         android:shortcutShortLabel="@string/hide_overlay_short"
         android:shortcutLongLabel="@string/hide_overlay_long">
         <intent
-            android:action="io.github.legandy.volumemanager.action.HIDE_OVERLAY"
-            android:targetPackage="io.github.legandy.volumemanager"
-            android:targetClass="io.github.legandy.volumemanager.actions.ActionReceiver" />
+            android:action="volumemixerpanel.action.HIDE_OVERLAY"
+            android:targetPackage="volumemixerpanel"
+            android:targetClass="volumemixerpanel.actions.ActionReceiver" />
     </shortcut>
 
     <shortcut
@@ -31,8 +31,8 @@
         android:shortcutShortLabel="@string/toggle_overlay_short"
         android:shortcutLongLabel="@string/toggle_overlay_long">
         <intent
-            android:action="io.github.legandy.volumemanager.action.TOGGLE_OVERLAY"
-            android:targetPackage="io.github.legandy.volumemanager"
-            android:targetClass="io.github.legandy.volumemanager.actions.ActionReceiver" />
+            android:action="volumemixerpanel.action.TOGGLE_OVERLAY"
+            android:targetPackage="volumemixerpanel"
+            android:targetClass="volumemixerpanel.actions.ActionReceiver" />
     </shortcut>
 </shortcuts>

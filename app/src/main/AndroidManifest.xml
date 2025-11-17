@@ -17,13 +17,13 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.VolumeManager"
+        android:theme="@style/Theme.VolumeMixerPanel"
         tools:targetApi="34">
 
         <activity
             android:name=".main.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.VolumeManager">
+            android:theme="@style/Theme.VolumeMixerPanel">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -34,19 +34,19 @@
             android:name=".app.AppSettingsActivity"
             android:exported="false"
             android:label="@string/app_settings_label"
-            android:theme="@style/Theme.VolumeManager" />
+            android:theme="@style/Theme.VolumeMixerPanel" />
 
         <!-- SetupActivity declaration added -->
         <activity
             android:name=".setup.SetupActivity"
             android:exported="false"
-            android:theme="@style/Theme.VolumeManager" />
+            android:theme="@style/Theme.VolumeMixerPanel" />
 
         <activity
             android:name=".actions.ShortcutActivity"
             android:exported="true"
             android:label="@string/create_shortcut_label"
-            android:theme="@style/Theme.VolumeManager.Dialog">
+            android:theme="@style/Theme.VolumeMixerPanel.Dialog">
             <intent-filter>
                 <action android:name="android.intent.action.CREATE_SHORTCUT" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -56,13 +56,13 @@
         <activity
             android:name=".actions.ShortcutProxyActivity"
             android:exported="true"
-            android:theme="@style/Theme.VolumeManager.Transparent"
+            android:theme="@style/Theme.VolumeMixerPanel.Transparent"
             android:taskAffinity=""
             android:excludeFromRecents="true">
             <intent-filter>
-                <action android:name="io.github.legandy.volumemanager.action.SHOW_OVERLAY" />
-                <action android:name="io.github.legandy.volumemanager.action.HIDE_OVERLAY" />
-                <action android:name="io.github.legandy.volumemanager.action.TOGGLE_OVERLAY" />
+                <action android:name="volumemixerpanel.action.SHOW_OVERLAY" />
+                <action android:name="volumemixerpanel.action.HIDE_OVERLAY" />
+                <action android:name="volumemixerpanel.action.TOGGLE_OVERLAY" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
@@ -84,9 +84,9 @@
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="io.github.legandy.volumemanager.action.SHOW_OVERLAY" />
-                <action android:name="io.github.legandy.volumemanager.action.HIDE_OVERLAY" />
-                <action android:name="io.github.legandy.volumemanager.action.TOGGLE_OVERLAY" />
+                <action android:name="volumemixerpanel.action.SHOW_OVERLAY" />
+                <action android:name="volumemixerpanel.action.HIDE_OVERLAY" />
+                <action android:name="volumemixerpanel.action.TOGGLE_OVERLAY" />
             </intent-filter>
         </receiver>
 

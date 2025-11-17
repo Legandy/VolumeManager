@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.VolumeManager" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.VolumeMixerPanel" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
-    <style name="Theme.VolumeManager.Dialog" parent="Theme.Material3.DayNight.Dialog"/>
+    <style name="Theme.VolumeMixerPanel.Dialog" parent="Theme.Material3.DayNight.Dialog"/>
 
-    <style name="Theme.VolumeManager.Transparent" parent="android:Theme">
+    <style name="Theme.VolumeMixerPanel.Transparent" parent="android:Theme">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowContentOverlay">@null</item>

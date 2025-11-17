@@ -6,11 +6,11 @@ plugins {
 
 
 android {
-    namespace = "io.github.legandy.volumemanager"
+    namespace = "io.github.legandy.volumemixerpanel"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.legandy.volumemanager"
+        applicationId = "io.github.legandy.volumemixerpanel"
         minSdk = 31
         targetSdk = 35
         versionCode = 1
