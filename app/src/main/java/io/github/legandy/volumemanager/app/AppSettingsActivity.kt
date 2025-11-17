@@ -49,14 +49,6 @@ class AppSettingsActivity : ComponentActivity() {
 
                     AppSettingsScreen(
                         uiState = uiState,
-                        onShowSetupRequested = { 
-                            val intent = Intent(this, MainActivity::class.java).apply {
-                                putExtra("EXTRA_RESTART_ONBOARDING", true)
-                                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            startActivity(intent)
-                            finish() 
-                        },
                         onThemeSettingClick = { appSettingsViewModel.showThemeSelectionDialog(true) },
                         onThemeSelected = { newTheme -> appSettingsViewModel.selectThemeMode(newTheme) },
                         onDismissThemeDialog = { appSettingsViewModel.showThemeSelectionDialog(false) },

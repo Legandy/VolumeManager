@@ -32,11 +32,10 @@ import io.github.legandy.volumemanager.ui.theme.VolumeManagerTheme
 @Composable
 fun AppSettingsScreen(
     uiState: AppSettingsViewModel.AppSettingsUiState,
-    onShowSetupRequested: () -> Unit,
     onThemeSettingClick: () -> Unit,
     onThemeSelected: (ThemeMode) -> Unit,
     onDismissThemeDialog: () -> Unit,
-    onResetOnboardingRequested: () -> Unit // New parameter
+    onResetOnboardingRequested: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -63,11 +62,7 @@ fun AppSettingsScreen(
                         onClick = onThemeSettingClick,
                         showDivider = true // Changed to true for consistency with new item
                     )
-                    SettingClickableItem(
-                        title = stringResource(R.string.show_setup_onboarding_content_description),
-                        onClick = onShowSetupRequested,
-                        showDivider = false
-                    )
+
                 }
             }
 
@@ -148,7 +143,6 @@ fun AppSettingsPreview() {
     VolumeManagerTheme {
         AppSettingsScreen(
             uiState = AppSettingsViewModel.AppSettingsUiState(),
-            onShowSetupRequested = {},
             onThemeSettingClick = {},
             onThemeSelected = {},
             onDismissThemeDialog = {},
