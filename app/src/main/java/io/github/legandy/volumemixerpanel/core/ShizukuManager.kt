@@ -35,7 +35,6 @@ import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import java.lang.reflect.Method
 import android.app.NotificationManager
-import java.io.ByteArrayOutputStream
 
 @SuppressLint("PrivateApi")
 class ShizukuManager(
