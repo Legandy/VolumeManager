@@ -34,6 +34,8 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import java.lang.reflect.Method
+import android.app.NotificationManager
+import java.io.ByteArrayOutputStream
 
 @SuppressLint("PrivateApi")
 class ShizukuManager(
@@ -184,7 +186,8 @@ class ShizukuManager(
 
         try {
             val process = Reflect.onClass(Shizuku::class.java).call("newProcess", arrayOf("pm", "grant", context.packageName, android.Manifest.permission.WRITE_SECURE_SETTINGS), null, null).get<Process>()
-            process.waitFor()
+            val exitValue = process.waitFor()
+            Log.i(TAG, "pm grant WRITE_SECURE_SETTINGS exit value: $exitValue")
 
             state = context.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
             if (state == PackageManager.PERMISSION_GRANTED) {
@@ -198,30 +201,31 @@ class ShizukuManager(
 
         throw SecurityException("Can't grant WRITE_SECURE_SETTINGS permission.")
     }
-    
 
-    fun grantNotificationPolicyPermission() {
-        var state = context.checkSelfPermission(android.Manifest.permission.ACCESS_NOTIFICATION_POLICY)
-        if (state == PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "ACCESS_NOTIFICATION_POLICY already granted.")
-            return
+
+    @SuppressLint("MissingPermission")
+    fun grantNotificationPolicyPermission(): Boolean {
+        // Check if permission is already granted via public API
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (notificationManager.isNotificationPolicyAccessGranted) {
+            Log.d(TAG, "Notification Policy Access already granted.")
+            return true
         }
 
-        try {
-            val process = Reflect.onClass(Shizuku::class.java).call("newProcess", arrayOf("pm", "grant", context.packageName, android.Manifest.permission.ACCESS_NOTIFICATION_POLICY), null, null).get<Process>()
-            process.waitFor()
+        if (shizukuNotificationManager == null) {
+            Log.e(TAG, "Shizuku Notification Manager not initialized. Cannot grant permission.")
+            return false
+        }
 
-            state = context.checkSelfPermission(android.Manifest.permission.ACCESS_NOTIFICATION_POLICY)
-            if (state == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "ACCESS_NOTIFICATION_POLICY granted successfully via Shizuku.")
-                return
-            }
+        return try {
+            shizukuNotificationManager?.call("setNotificationPolicyAccessGranted", context.packageName, true)
+            Log.d(TAG, "Notification Policy Access granted successfully via Shizuku.")
+            // Verify if permission is truly granted after the call
+            notificationManager.isNotificationPolicyAccessGranted
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to grant ACCESS_NOTIFICATION_POLICY via Shizuku: ${e.message}", e)
-            throw SecurityException("Can't grant ACCESS_NOTIFICATION_POLICY permission via Shizuku.")
+            Log.e(TAG, "Failed to grant Notification Policy Access via Shizuku: ${e.message}", e)
+            false
         }
-
-        throw SecurityException("Can't grant ACCESS_NOTIFICATION_POLICY permission.")
     }
 
     fun enableAccessibilityService(componentName: ComponentName) {
