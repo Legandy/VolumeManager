@@ -34,7 +34,8 @@ fun MainScreen(
             onOpenAccessibilityClick = { /* Handled by AccessibilityPermissionScreen directly opening settings */ },
             onOpenNotificationPolicyAccessClick = setupViewModel::onOpenNotificationPolicyAccessClick,
             onOpenOverlayPermissionClick = { /* This is handled by SetupActivity directly opening settings via launcher */ }, // Added parameter
-            onGrantAllPermissionsClick = setupViewModel::grantAllPermissionsWithShizuku
+            onGrantAllPermissionsClick = setupViewModel::grantAllPermissionsWithShizuku,
+            canGoNext = uiState.canGoNext // Pass the new state
         )
     }
 }

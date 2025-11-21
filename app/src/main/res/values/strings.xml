@@ -7,8 +7,11 @@
 
         <!-- Onboarding Flow -->
         <string name="onboarding_setup_title">Volume Manager Setup</string>
+    <string name="previous_button_description">Previous onboarding step</string>
+    <string name="next_button_text">Next</string>
 
-        <!-- Welcome Screen -->
+
+    <!-- Welcome Screen -->
         <string name="welcome_title">Welcome to Volume Manager!</string>
         <string name="welcome_description">Easily control app volumes and more.</string>
         <string name="welcome_get_started_button">Get Started</string>

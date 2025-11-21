@@ -2,6 +2,7 @@ package io.github.legandy.volumemixerpanel.setup
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,9 +13,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DoneAll
@@ -28,13 +33,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,9 +50,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.legandy.volumemixerpanel.R
 import io.github.legandy.volumemixerpanel.setup.SetupViewModel.OnboardingStep
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.LaunchedEffect
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SetupScreen(
     currentStep: OnboardingStep,
@@ -55,59 +64,107 @@ fun SetupScreen(
     hasShizukuPermission: Boolean,
     isAccessibilityEnabled: Boolean,
     hasNotificationPolicyAccess: Boolean,
-    hasOverlayPermission: Boolean, // New parameter
+    hasOverlayPermission: Boolean,
     onGrantShizukuClick: () -> Unit,
     onOpenAccessibilityClick: () -> Unit,
     onOpenNotificationPolicyAccessClick: () -> Unit,
-    onOpenOverlayPermissionClick: () -> Unit, // New parameter
-    onGrantAllPermissionsClick: () -> Unit
+    onOpenOverlayPermissionClick: () -> Unit,
+    onGrantAllPermissionsClick: () -> Unit,
+    canGoNext: Boolean // New parameter for controlling "Next" button state
 ) {
+    val onboardingSteps = remember { OnboardingStep.entries.toTypedArray() }
+    val pagerState = rememberPagerState(
+        initialPage = onboardingSteps.indexOf(currentStep),
+        pageCount = { onboardingSteps.size }
+    )
+    val coroutineScope = rememberCoroutineScope()
+
+    // Synchronize pager state with ViewModel's currentStep
+    LaunchedEffect(currentStep) {
+        val index = onboardingSteps.indexOf(currentStep)
+        if (index != -1 && index != pagerState.currentPage) {
+            pagerState.animateScrollToPage(index)
+        }
+    }
+
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_setup_title)) }) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            when (currentStep) {
-                OnboardingStep.Welcome -> WelcomeScreen(onGetStartedClick = {
-                    onNavigateTo(OnboardingStep.Shizuku)
-                })
-                OnboardingStep.Shizuku -> ShizukuPermissionScreen(
-                    hasShizuku = hasShizukuPermission,
-                    onGrantShizukuClick = onGrantShizukuClick,
-                    onNextClick = { onNavigateTo(OnboardingStep.Accessibility) },
-                    onGrantAllPermissionsClick = onGrantAllPermissionsClick
-                )
-                OnboardingStep.Accessibility -> AccessibilityPermissionScreen(
-                    hasAccessibility = isAccessibilityEnabled,
-                    onOpenAccessibilityClick = onOpenAccessibilityClick,
-                    onSkipClick = { onNavigateTo(OnboardingStep.NotificationPolicyAccess) },
-                    onNextClick = { onNavigateTo(OnboardingStep.NotificationPolicyAccess) }
-                )
-                OnboardingStep.NotificationPolicyAccess -> NotificationPolicyAccessScreen(
-                    hasNotificationPolicyAccess = hasNotificationPolicyAccess,
-                    onOpenNotificationPolicyAccessClick = onOpenNotificationPolicyAccessClick,
-                    onSkipClick = { onNavigateTo(OnboardingStep.OverlayPermission) }, // Navigate to OverlayPermission
-                    onNextClick = { onNavigateTo(OnboardingStep.OverlayPermission) } // Navigate to OverlayPermission
-                )
-                OnboardingStep.OverlayPermission -> OverlayPermissionScreen( // New step
-                    hasOverlayPermission = hasOverlayPermission,
-                    onOpenOverlayPermissionClick = onOpenOverlayPermissionClick,
-                    onSkipClick = { onNavigateTo(OnboardingStep.Complete) },
-                    onNextClick = { onNavigateTo(OnboardingStep.Complete) }
-                )
-                OnboardingStep.Complete -> OnboardingCompleteScreen(onGoToAppClick = {onOnboardingComplete()})
+            HorizontalPager(
+                state = pagerState,
+                userScrollEnabled = false, // Disable user swipe to ensure guided navigation
+                modifier = Modifier
+                    .weight(1f) // Occupy remaining space
+                    .padding(horizontal = 24.dp)
+            ) { page ->
+                val step = onboardingSteps[page]
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    when (step) {
+                        OnboardingStep.Welcome -> WelcomeScreen() // Removed onGetStartedClick
+                        OnboardingStep.Shizuku -> ShizukuPermissionScreen(
+                            hasShizuku = hasShizukuPermission,
+                            onGrantShizukuClick = onGrantShizukuClick,
+                            onGrantAllPermissionsClick = onGrantAllPermissionsClick
+                        )
+                        OnboardingStep.Accessibility -> AccessibilityPermissionScreen(
+                            hasAccessibility = isAccessibilityEnabled,
+                            onOpenAccessibilityClick = onOpenAccessibilityClick
+                        )
+                        OnboardingStep.NotificationPolicyAccess -> NotificationPolicyAccessScreen(
+                            hasNotificationPolicyAccess = hasNotificationPolicyAccess,
+                            onOpenNotificationPolicyAccessClick = onOpenNotificationPolicyAccessClick
+                        )
+                        OnboardingStep.OverlayPermission -> OverlayPermissionScreen(
+                            hasOverlayPermission = hasOverlayPermission,
+                            onOpenOverlayPermissionClick = onOpenOverlayPermissionClick
+                        )
+                        OnboardingStep.Complete -> OnboardingCompleteScreen() // Modified to remove onGoToAppClick
+                    }
+                }
             }
+
+            // Bottom Navigation Section
+            BottomNavigationSection(
+                currentPage = pagerState.currentPage,
+                pageCount = onboardingSteps.size,
+                onPreviousClick = {
+                    coroutineScope.launch {
+                        val previousPageIndex = pagerState.currentPage - 1
+                        if (previousPageIndex >= 0) {
+                            pagerState.animateScrollToPage(previousPageIndex)
+                            onNavigateTo(onboardingSteps[previousPageIndex])
+                        }
+                    }
+                },
+                onNextClick = {
+                    val nextPageIndex = pagerState.currentPage + 1
+                    if (nextPageIndex < onboardingSteps.size) {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(nextPageIndex)
+                            onNavigateTo(onboardingSteps[nextPageIndex])
+                        }
+                    } else if (nextPageIndex == onboardingSteps.size) { // This means we are on the last page and attempting to go to 'Complete'
+                        onOnboardingComplete()
+                    }
+                },
+                canGoNext = canGoNext,
+                isLastPage = (pagerState.currentPage == onboardingSteps.size - 1)
+            )
         }
     }
 }
 
 @Composable
-fun WelcomeScreen(onGetStartedClick: () -> Unit) {
+fun WelcomeScreen() { // Removed onGetStartedClick parameter
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -123,18 +180,22 @@ fun WelcomeScreen(onGetStartedClick: () -> Unit) {
         Text(
             stringResource(R.string.welcome_title),
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             stringResource(R.string.welcome_description),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp) // Fixed height to prevent jumping
         )
         Spacer(modifier = Modifier.height(32.dp))
-        Button(onClick = onGetStartedClick, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.welcome_get_started_button))
-        }
+        // Removed "Get Started" button
     }
 }
 
@@ -142,14 +203,12 @@ fun WelcomeScreen(onGetStartedClick: () -> Unit) {
 fun ShizukuPermissionScreen(
     hasShizuku: Boolean,
     onGrantShizukuClick: () -> Unit,
-    onNextClick: () -> Unit,
     onGrantAllPermissionsClick: () -> Unit
 ) {
-    // Removed context as it's no longer used.
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize() // Fill available space
     ) {
         Icon(
             Icons.Filled.Key, // Example icon
@@ -160,12 +219,18 @@ fun ShizukuPermissionScreen(
         Text(
             stringResource(R.string.shizuku_permission_title),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
         Text(
             stringResource(R.string.shizuku_permission_description),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp) // Fixed height to prevent jumping
         )
         StatusCard(
             title = stringResource(R.string.shizuku_card_title),
@@ -174,10 +239,7 @@ fun ShizukuPermissionScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Button(
-            onClick = {
-                onGrantShizukuClick()
-                // Removed the line that launched the Shizuku app directly.
-            },
+            onClick = onGrantShizukuClick,
             modifier = Modifier.fillMaxWidth(),
             enabled = !hasShizuku
         ) {
@@ -190,29 +252,21 @@ fun ShizukuPermissionScreen(
         ) {
             Text(stringResource(R.string.grant_all_permissions_button))
         }
-        Button(
-            onClick = onNextClick,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = hasShizuku
-        ) {
-            Text(stringResource(R.string.shizuku_next_button))
-        }
     }
 }
 
 @Composable
 fun AccessibilityPermissionScreen(
     hasAccessibility: Boolean,
-    onOpenAccessibilityClick: () -> Unit,
-    onSkipClick: () -> Unit,
-    onNextClick: () -> Unit
+    onOpenAccessibilityClick: () -> Unit
 ) {
     val context = LocalContext.current
     val intent = remember { Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS) }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize() // Fill available space
     ) {
         Icon(
             Icons.Filled.Accessibility, // Example icon
@@ -223,12 +277,18 @@ fun AccessibilityPermissionScreen(
         Text(
             stringResource(R.string.accessibility_service_title),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
         Text(
             stringResource(R.string.accessibility_service_description),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp) // Fixed height
         )
         StatusCard(
             title = stringResource(R.string.accessibility_card_title),
@@ -246,36 +306,21 @@ fun AccessibilityPermissionScreen(
         ) {
             Text(stringResource(R.string.accessibility_enable_button))
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            TextButton(onClick = onSkipClick) {
-                Text(stringResource(R.string.permission_skip_for_now_button))
-            }
-            Button(
-                onClick = onNextClick,
-                enabled = hasAccessibility
-            ) {
-                Text(stringResource(R.string.shizuku_next_button))
-            }
-        }
     }
 }
 
 @Composable
 fun NotificationPolicyAccessScreen(
     hasNotificationPolicyAccess: Boolean,
-    onOpenNotificationPolicyAccessClick: () -> Unit,
-    onSkipClick: () -> Unit,
-    onNextClick: () -> Unit
+    onOpenNotificationPolicyAccessClick: () -> Unit
 ) {
     val context = LocalContext.current
     val intent = remember { Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize() // Fill available space
     ) {
         Icon(
             Icons.Filled.Notifications, // Example icon
@@ -286,12 +331,18 @@ fun NotificationPolicyAccessScreen(
         Text(
             stringResource(R.string.notification_policy_access_title),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
         Text(
             stringResource(R.string.notification_policy_access_description),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp) // Fixed height
         )
         StatusCard(
             title = stringResource(R.string.notification_policy_access_card_title),
@@ -309,35 +360,18 @@ fun NotificationPolicyAccessScreen(
         ) {
             Text(stringResource(R.string.notification_policy_access_grant_button))
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            TextButton(onClick = onSkipClick) {
-                Text(stringResource(R.string.permission_skip_for_now_button))
-            }
-            Button(
-                onClick = onNextClick,
-                enabled = hasNotificationPolicyAccess
-            ) {
-                Text(stringResource(R.string.shizuku_next_button))
-            }
-        }
     }
 }
 
 @Composable
 fun OverlayPermissionScreen(
     hasOverlayPermission: Boolean,
-    onOpenOverlayPermissionClick: () -> Unit,
-    onSkipClick: () -> Unit,
-    onNextClick: () -> Unit
+    onOpenOverlayPermissionClick: () -> Unit
 ) {
-    // Removed unused 'context' and 'intent' variables
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize() // Fill available space
     ) {
         Icon(
             Icons.Filled.Widgets, // Icon for overlay permission
@@ -346,18 +380,24 @@ fun OverlayPermissionScreen(
             tint = MaterialTheme.colorScheme.primary
         )
         Text(
-            stringResource(R.string.overlay_permission_title), // New string resource needed
+            stringResource(R.string.overlay_permission_title),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
         Text(
-            stringResource(R.string.overlay_permission_description), // New string resource needed
+            stringResource(R.string.overlay_permission_description),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp) // Fixed height
         )
         StatusCard(
-            title = stringResource(R.string.overlay_permission_card_title), // Corrected R.R.string
-            description = stringResource(R.string.overlay_permission_card_description), // Corrected R.R.string
+            title = stringResource(R.string.overlay_permission_card_title),
+            description = stringResource(R.string.overlay_permission_card_description),
             granted = hasOverlayPermission
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -369,27 +409,13 @@ fun OverlayPermissionScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = !hasOverlayPermission
         ) {
-            Text(stringResource(R.string.overlay_permission_grant_button)) // Corrected R.R.string
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            TextButton(onClick = onSkipClick) {
-                Text(stringResource(R.string.permission_skip_for_now_button))
-            }
-            Button(
-                onClick = onNextClick,
-                enabled = hasOverlayPermission
-            ) {
-                Text(stringResource(R.string.shizuku_next_button))
-            }
+            Text(stringResource(R.string.overlay_permission_grant_button))
         }
     }
 }
 
 @Composable
-fun OnboardingCompleteScreen(onGoToAppClick: () -> Unit) {
+fun OnboardingCompleteScreen() { // Removed onGoToAppClick parameter
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -405,19 +431,23 @@ fun OnboardingCompleteScreen(onGoToAppClick: () -> Unit) {
         Text(
             stringResource(R.string.onboarding_complete_title),
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             stringResource(R.string.onboarding_complete_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .height(80.dp) // Fixed height
         )
         Spacer(modifier = Modifier.height(32.dp))
-        Button(onClick = onGoToAppClick, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.onboarding_complete_go_to_app_button)) // Corrected R.R.string
-        }
+        // Removed "Go to app" button
     }
 }
 
@@ -474,5 +504,62 @@ fun WaitingForShizukuScreen() { /* TODO: Implement actual waiting screen */
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun BottomNavigationSection(
+    currentPage: Int,
+    pageCount: Int,
+    onPreviousClick: () -> Unit,
+    onNextClick: () -> Unit,
+    canGoNext: Boolean,
+    isLastPage: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Previous Button
+        IconButton(
+            onClick = onPreviousClick,
+            enabled = currentPage > 0,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.previous_button_description))
+        }
+
+        // Page Indicators
+        Row(
+            modifier = Modifier.weight(2f),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            repeat(pageCount) { iteration ->
+                val color = if (currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                Icon(
+                    Icons.Filled.CheckCircle, // Using a simple circle icon for indicator
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .size(8.dp)
+                )
+            }
+        }
+
+        // Next/Complete Button
+        IconButton(
+            onClick = onNextClick,
+            enabled = canGoNext || isLastPage,
+            modifier = Modifier.weight(1f)
+        ) {
+            val icon = if (isLastPage) Icons.Filled.CheckCircle else Icons.AutoMirrored.Filled.ArrowForward
+            val contentDescription = if (isLastPage) stringResource(R.string.onboarding_complete_go_to_app_button) else stringResource(R.string.next_button_text)
+            Icon(icon, contentDescription = contentDescription)
+        }
     }
 }

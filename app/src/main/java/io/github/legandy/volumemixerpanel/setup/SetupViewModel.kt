@@ -19,7 +19,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import android.content.Intent
 import android.provider.Settings
 import android.os.Build
 
@@ -47,13 +46,16 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         viewModelScope.launch {
             snapshotFlow { manager.shizukuReady }.collect { isReady ->
                 _uiState.value = _uiState.value.copy(hasShizukuReady = isReady)
+                updateCanGoNext(_uiState.value.currentOnboardingStep)
             }
         }
         viewModelScope.launch {
             snapshotFlow { manager.shizukuPermission }.collect { hasPermission ->
                 _uiState.value = _uiState.value.copy(shizukuPermission = hasPermission)
+                updateCanGoNext(_uiState.value.currentOnboardingStep)
             }
         }
+        onActivityResume() // Initial check
     }
 
     fun onActivityResume() {
@@ -64,6 +66,7 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
             shizukuPermission = manager.shizukuPermission,
             hasOverlayPermission = checkOverlayPermission()
         )
+        updateCanGoNext(_uiState.value.currentOnboardingStep)
     }
 
     private fun checkNotificationPolicyAccess(): Boolean {
@@ -81,7 +84,21 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     fun navigateToOnboardingStep(newStep: OnboardingStep) {
         _uiState.value = _uiState.value.copy(currentOnboardingStep = newStep)
         savedStateHandle[CURRENT_ONBOARDING_STEP_KEY] = newStep
+        updateCanGoNext(newStep)
     }
+
+    private fun updateCanGoNext(step: OnboardingStep) {
+        val canGoNext = when (step) {
+            OnboardingStep.Welcome -> true
+            OnboardingStep.Shizuku -> _uiState.value.shizukuPermission
+            OnboardingStep.Accessibility -> _uiState.value.isAccessibilityEnabled
+            OnboardingStep.NotificationPolicyAccess -> _uiState.value.hasNotificationPolicyAccess
+            OnboardingStep.OverlayPermission -> _uiState.value.hasOverlayPermission
+            OnboardingStep.Complete -> true
+        }
+        _uiState.value = _uiState.value.copy(canGoNext = canGoNext)
+    }
+
 
     fun completeOnboarding() {
         viewModelScope.launch {
@@ -109,8 +126,6 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
                 manager.grantWriteSecureSettingsPermission()
                 manager.enableAccessibilityService(ComponentName(getApplication<Application>().packageName, OverlayService::class.java.name))
                 manager.grantNotificationPolicyPermission() // Grant Notification Policy Access
-                // Note: SYSTEM_ALERT_WINDOW cannot be granted via Shizuku, user must do it manually.
-                // We will navigate to the next step which will prompt the user.
                 navigateToOnboardingStep(OnboardingStep.OverlayPermission) // Navigate to overlay permission step
             } catch (e: SecurityException) {
                 e.printStackTrace()
@@ -146,7 +161,8 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         val hasNotificationPolicyAccess: Boolean = false,
         val hasOverlayPermission: Boolean = false, // New field
         val isOnboardingCompleted: Boolean = false,
-        val currentOnboardingStep: OnboardingStep = OnboardingStep.Welcome
+        val currentOnboardingStep: OnboardingStep = OnboardingStep.Welcome,
+        val canGoNext: Boolean = true // Default to true for Welcome screen
     )
 
     companion object {
