@@ -21,6 +21,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import android.content.Intent
 import android.provider.Settings
+import android.os.Build
 
 class SetupViewModel(application: Application, private val savedStateHandle: SavedStateHandle, private val dataStore: DataStore<Preferences>) : AndroidViewModel(application) {
 
@@ -60,12 +61,21 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
             isAccessibilityEnabled = isAccessibilityServiceEnabled(getApplication()),
             hasNotificationPolicyAccess = checkNotificationPolicyAccess(),
             hasShizukuReady = manager.shizukuReady,
-            shizukuPermission = manager.shizukuPermission
+            shizukuPermission = manager.shizukuPermission,
+            hasOverlayPermission = checkOverlayPermission()
         )
     }
 
     private fun checkNotificationPolicyAccess(): Boolean {
         return (getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).isNotificationPolicyAccessGranted
+    }
+
+    private fun checkOverlayPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(getApplication())
+        } else {
+            true // Permission not needed on older Android versions
+        }
     }
 
     fun navigateToOnboardingStep(newStep: OnboardingStep) {
@@ -99,7 +109,9 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
                 manager.grantWriteSecureSettingsPermission()
                 manager.enableAccessibilityService(ComponentName(getApplication<Application>().packageName, OverlayService::class.java.name))
                 manager.grantNotificationPolicyPermission() // Grant Notification Policy Access
-                navigateToOnboardingStep(OnboardingStep.Complete) // Navigate to complete step after granting all
+                // Note: SYSTEM_ALERT_WINDOW cannot be granted via Shizuku, user must do it manually.
+                // We will navigate to the next step which will prompt the user.
+                navigateToOnboardingStep(OnboardingStep.OverlayPermission) // Navigate to overlay permission step
             } catch (e: SecurityException) {
                 e.printStackTrace()
             }
@@ -122,7 +134,8 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         Welcome,
         Shizuku,
         Accessibility,
-        NotificationPolicyAccess, // New step for DND access
+        NotificationPolicyAccess,
+        OverlayPermission, // New step for SYSTEM_ALERT_WINDOW
         Complete
     }
 
@@ -131,6 +144,7 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         val shizukuPermission: Boolean = false,
         val isAccessibilityEnabled: Boolean = false,
         val hasNotificationPolicyAccess: Boolean = false,
+        val hasOverlayPermission: Boolean = false, // New field
         val isOnboardingCompleted: Boolean = false,
         val currentOnboardingStep: OnboardingStep = OnboardingStep.Welcome
     )

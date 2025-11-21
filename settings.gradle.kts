@@ -17,5 +17,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "VolumeManager"
+rootProject.name = "VolumeMixerPanel"
 include(":app")

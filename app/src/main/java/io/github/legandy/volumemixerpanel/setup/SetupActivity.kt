@@ -12,10 +12,18 @@ import io.github.legandy.volumemixerpanel.core.MyApplication
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 import android.provider.Settings
 import io.github.legandy.volumemixerpanel.main.MainActivity
+import android.net.Uri
+import android.os.Build
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.net.toUri // Added import for toUri
 
 class SetupActivity : ComponentActivity() {
 
     private val setupViewModel: SetupViewModel by viewModels { SetupViewModelFactory() }
+
+    private val overlayPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        // The onResume method will handle updating the UI state after the user returns from settings.
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,12 +54,14 @@ class SetupActivity : ComponentActivity() {
                         hasShizukuPermission = uiState.shizukuPermission,
                         isAccessibilityEnabled = uiState.isAccessibilityEnabled,
                         hasNotificationPolicyAccess = uiState.hasNotificationPolicyAccess,
+                        hasOverlayPermission = uiState.hasOverlayPermission, // Pass new state
                         onGrantShizukuClick = { MyApplication.manager.requestShizukuPermission(this) },
                         onOpenAccessibilityClick = { openAccessibilitySettings() },
                         onOpenNotificationPolicyAccessClick = {
                             setupViewModel.onOpenNotificationPolicyAccessClick() // Call ViewModel to grant permission
                             openNotificationPolicyAccessSettings() // Then open system settings
                         },
+                        onOpenOverlayPermissionClick = { openOverlayPermissionSettings() }, // Pass new callback
                         onGrantAllPermissionsClick = { setupViewModel.grantAllPermissionsWithShizuku() }
                     )
                 }
@@ -70,5 +80,13 @@ class SetupActivity : ComponentActivity() {
 
     private fun openNotificationPolicyAccessSettings() {
         startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    private fun openOverlayPermissionSettings() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            "package:$packageName".toUri() // Using toUri and string template
+        )
+        overlayPermissionLauncher.launch(intent)
     }
 }

@@ -1,6 +1,6 @@
 [versions]
 # build plugin versions
-agp = "8.5.2"
+agp = "8.13.1"
 kotlin = "2.0.20"
 joor = "0.9.15"
 hiddenapibypass = "6.1"
@@ -58,3 +58,8 @@ shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-plugin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

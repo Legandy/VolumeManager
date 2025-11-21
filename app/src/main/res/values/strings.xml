@@ -32,14 +32,22 @@
         <string name="accessibility_enable_button">Enable Accessibility Service</string>
         <string name="permission_skip_for_now_button">Skip for now</string>
 
-        <!-- Notification Policy Access Screen (replaces Notification Access) -->
+        <!-- Notification Policy Access Screen -->
         <string name="notification_policy_access_title">Notification Policy Access</string>
         <string name="notification_policy_access_description">Grant Notification Policy Access to allow VolumeManager to change Ringer Mode &amp; Do Not Disturb settings.</string>
         <string name="notification_policy_access_card_title">Notification Policy Access</string>
         <string name="notification_policy_access_card_description">To change Ringer Mode &amp; DND.</string>
         <string name="notification_policy_access_grant_button">Grant Notification Policy Access</string>
 
-        <!-- Onboarding Complete Screen -->
+        <!-- Daw Over Apps Permission -->
+        <string name="overlay_permission_title">Allow Drawing Over Other Apps</string>
+        <string name="overlay_permission_description">This app needs permission to draw over other apps to display the volume mixer panel on top of other applications. Please grant this permission in the settings.</string>
+        <string name="overlay_permission_card_title">Overlay Permission Status</string>
+        <string name="overlay_permission_card_description">The app needs this permission to show the volume mixer.</string>
+        <string name="overlay_permission_grant_button">Grant Overlay Permission</string>
+
+
+    <!-- Onboarding Complete Screen -->
         <string name="onboarding_complete_title">You are All Set!</string>
         <string name="onboarding_complete_description">VolumeManager is now ready to use. You can change optional permissions later in settings.</string>
         <string name="onboarding_complete_go_to_app_button">Go to App</string>

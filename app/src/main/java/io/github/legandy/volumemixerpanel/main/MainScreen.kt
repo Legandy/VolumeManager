@@ -8,10 +8,11 @@ import io.github.legandy.volumemixerpanel.core.MyApplication
 import io.github.legandy.volumemixerpanel.settings.SettingsScreen
 import io.github.legandy.volumemixerpanel.setup.SetupScreen
 import io.github.legandy.volumemixerpanel.setup.SetupViewModel
+import io.github.legandy.volumemixerpanel.setup.SetupViewModelFactory // Added import
 
 @Composable
 fun MainScreen(
-    setupViewModel: SetupViewModel = viewModel()
+    setupViewModel: SetupViewModel = viewModel(factory = SetupViewModelFactory())
 ) {
     val uiState by setupViewModel.uiState.collectAsState()
 
@@ -27,10 +28,12 @@ fun MainScreen(
             onOnboardingComplete = setupViewModel::completeOnboarding,
             hasShizukuPermission = uiState.shizukuPermission,
             isAccessibilityEnabled = uiState.isAccessibilityEnabled,
-            hasNotificationPolicyAccess = uiState.hasNotificationPolicyAccess, // Changed parameter
+            hasNotificationPolicyAccess = uiState.hasNotificationPolicyAccess,
+            hasOverlayPermission = uiState.hasOverlayPermission, // Added parameter
             onGrantShizukuClick = { /* Handled by ShizukuPermissionScreen directly opening app */ },
             onOpenAccessibilityClick = { /* Handled by AccessibilityPermissionScreen directly opening settings */ },
-            onOpenNotificationPolicyAccessClick = setupViewModel::onOpenNotificationPolicyAccessClick, // Changed parameter
+            onOpenNotificationPolicyAccessClick = setupViewModel::onOpenNotificationPolicyAccessClick,
+            onOpenOverlayPermissionClick = { /* This is handled by SetupActivity directly opening settings via launcher */ }, // Added parameter
             onGrantAllPermissionsClick = setupViewModel::grantAllPermissionsWithShizuku
         )
     }

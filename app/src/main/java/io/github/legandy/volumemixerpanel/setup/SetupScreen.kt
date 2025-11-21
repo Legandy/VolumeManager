@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -53,10 +54,12 @@ fun SetupScreen(
     onOnboardingComplete: () -> Unit,
     hasShizukuPermission: Boolean,
     isAccessibilityEnabled: Boolean,
-    hasNotificationPolicyAccess: Boolean, // Changed from hasNotificationAccess
+    hasNotificationPolicyAccess: Boolean,
+    hasOverlayPermission: Boolean, // New parameter
     onGrantShizukuClick: () -> Unit,
     onOpenAccessibilityClick: () -> Unit,
-    onOpenNotificationPolicyAccessClick: () -> Unit, // Changed from onOpenNotificationAccessClick
+    onOpenNotificationPolicyAccessClick: () -> Unit,
+    onOpenOverlayPermissionClick: () -> Unit, // New parameter
     onGrantAllPermissionsClick: () -> Unit
 ) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_setup_title)) }) }) { padding ->
@@ -82,12 +85,18 @@ fun SetupScreen(
                 OnboardingStep.Accessibility -> AccessibilityPermissionScreen(
                     hasAccessibility = isAccessibilityEnabled,
                     onOpenAccessibilityClick = onOpenAccessibilityClick,
-                    onSkipClick = { onNavigateTo(OnboardingStep.NotificationPolicyAccess) }, // Changed navigation
-                    onNextClick = { onNavigateTo(OnboardingStep.NotificationPolicyAccess) } // Changed navigation
+                    onSkipClick = { onNavigateTo(OnboardingStep.NotificationPolicyAccess) },
+                    onNextClick = { onNavigateTo(OnboardingStep.NotificationPolicyAccess) }
                 )
-                OnboardingStep.NotificationPolicyAccess -> NotificationPolicyAccessScreen( // Changed branch and composable name
-                    hasNotificationPolicyAccess = hasNotificationPolicyAccess, // Changed parameter
-                    onOpenNotificationPolicyAccessClick = onOpenNotificationPolicyAccessClick, // Changed parameter
+                OnboardingStep.NotificationPolicyAccess -> NotificationPolicyAccessScreen(
+                    hasNotificationPolicyAccess = hasNotificationPolicyAccess,
+                    onOpenNotificationPolicyAccessClick = onOpenNotificationPolicyAccessClick,
+                    onSkipClick = { onNavigateTo(OnboardingStep.OverlayPermission) }, // Navigate to OverlayPermission
+                    onNextClick = { onNavigateTo(OnboardingStep.OverlayPermission) } // Navigate to OverlayPermission
+                )
+                OnboardingStep.OverlayPermission -> OverlayPermissionScreen( // New step
+                    hasOverlayPermission = hasOverlayPermission,
+                    onOpenOverlayPermissionClick = onOpenOverlayPermissionClick,
                     onSkipClick = { onNavigateTo(OnboardingStep.Complete) },
                     onNextClick = { onNavigateTo(OnboardingStep.Complete) }
                 )
@@ -261,14 +270,14 @@ fun AccessibilityPermissionScreen(
 }
 
 @Composable
-fun NotificationPolicyAccessScreen( // Renamed composable
-    hasNotificationPolicyAccess: Boolean, // Changed parameter
-    onOpenNotificationPolicyAccessClick: () -> Unit, // Changed parameter
+fun NotificationPolicyAccessScreen(
+    hasNotificationPolicyAccess: Boolean,
+    onOpenNotificationPolicyAccessClick: () -> Unit,
     onSkipClick: () -> Unit,
     onNextClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val intent = remember { Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) } // Changed intent
+    val intent = remember { Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS) }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -281,28 +290,28 @@ fun NotificationPolicyAccessScreen( // Renamed composable
             tint = MaterialTheme.colorScheme.primary
         )
         Text(
-            stringResource(R.string.notification_policy_access_title), // New string resource needed
+            stringResource(R.string.notification_policy_access_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Text(
-            stringResource(R.string.notification_policy_access_description), // New string resource needed
+            stringResource(R.string.notification_policy_access_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         StatusCard(
-            title = stringResource(R.string.notification_policy_access_card_title), // New string resource needed
-            description = stringResource(R.string.notification_policy_access_card_description), // New string resource needed
-            granted = hasNotificationPolicyAccess // Changed parameter
+            title = stringResource(R.string.notification_policy_access_card_title),
+            description = stringResource(R.string.notification_policy_access_card_description),
+            granted = hasNotificationPolicyAccess
         )
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
-                onOpenNotificationPolicyAccessClick() // Changed callback
+                onOpenNotificationPolicyAccessClick()
                 context.startActivity(intent)
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !hasNotificationPolicyAccess // Changed parameter
+            enabled = !hasNotificationPolicyAccess
         ) {
             Text(stringResource(R.string.notification_policy_access_grant_button))
         }
@@ -315,7 +324,69 @@ fun NotificationPolicyAccessScreen( // Renamed composable
             }
             Button(
                 onClick = onNextClick,
-                enabled = hasNotificationPolicyAccess // Changed parameter
+                enabled = hasNotificationPolicyAccess
+            ) {
+                Text(stringResource(R.string.shizuku_next_button))
+            }
+        }
+    }
+}
+
+@Composable
+fun OverlayPermissionScreen(
+    hasOverlayPermission: Boolean,
+    onOpenOverlayPermissionClick: () -> Unit,
+    onSkipClick: () -> Unit,
+    onNextClick: () -> Unit
+) {
+    // Removed unused 'context' and 'intent' variables
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            Icons.Filled.Widgets, // Icon for overlay permission
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            stringResource(R.string.overlay_permission_title), // New string resource needed
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            stringResource(R.string.overlay_permission_description), // New string resource needed
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        StatusCard(
+            title = stringResource(R.string.overlay_permission_card_title), // New string resource needed
+            description = stringResource(R.string.overlay_permission_card_description), // New string resource needed
+            granted = hasOverlayPermission
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = {
+                onOpenOverlayPermissionClick()
+                // The activity will handle launching the intent via launcher
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !hasOverlayPermission
+        ) {
+            Text(stringResource(R.string.overlay_permission_grant_button)) // New string resource needed
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            TextButton(onClick = onSkipClick) {
+                Text(stringResource(R.string.permission_skip_for_now_button))
+            }
+            Button(
+                onClick = onNextClick,
+                enabled = hasOverlayPermission
             ) {
                 Text(stringResource(R.string.shizuku_next_button))
             }
