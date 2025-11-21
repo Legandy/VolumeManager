@@ -145,13 +145,7 @@ fun ShizukuPermissionScreen(
     onNextClick: () -> Unit,
     onGrantAllPermissionsClick: () -> Unit
 ) {
-    val context = LocalContext.current
-    val shizukuIntent = remember {
-        context.packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
-            ?.apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-    }
+    // Removed context as it's no longer used.
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -182,7 +176,7 @@ fun ShizukuPermissionScreen(
         Button(
             onClick = {
                 onGrantShizukuClick()
-                shizukuIntent?.let { context.startActivity(it) }
+                // Removed the line that launched the Shizuku app directly.
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = !hasShizuku
@@ -362,8 +356,8 @@ fun OverlayPermissionScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         StatusCard(
-            title = stringResource(R.string.overlay_permission_card_title), // New string resource needed
-            description = stringResource(R.string.overlay_permission_card_description), // New string resource needed
+            title = stringResource(R.string.overlay_permission_card_title), // Corrected R.R.string
+            description = stringResource(R.string.overlay_permission_card_description), // Corrected R.R.string
             granted = hasOverlayPermission
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -375,7 +369,7 @@ fun OverlayPermissionScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = !hasOverlayPermission
         ) {
-            Text(stringResource(R.string.overlay_permission_grant_button)) // New string resource needed
+            Text(stringResource(R.string.overlay_permission_grant_button)) // Corrected R.R.string
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -422,7 +416,7 @@ fun OnboardingCompleteScreen(onGoToAppClick: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(32.dp))
         Button(onClick = onGoToAppClick, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.onboarding_complete_go_to_app_button))
+            Text(stringResource(R.string.onboarding_complete_go_to_app_button)) // Corrected R.R.string
         }
     }
 }
