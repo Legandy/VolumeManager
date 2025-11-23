@@ -174,6 +174,33 @@ class ShizukuManager(
             }
         }
     }
+    
+    @SuppressLint("NewApi")
+    fun grantSystemAlertWindowPermission() {
+        val appOpsManager = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val mode = appOpsManager.checkOpNoThrow(android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW, android.os.Process.myUid(), context.packageName)
+        if (mode == android.app.AppOpsManager.MODE_ALLOWED) {
+            Log.d(TAG, "SYSTEM_ALERT_WINDOW already granted.")
+            return
+        }
+
+        try {
+            val process = Reflect.onClass(Shizuku::class.java).call("newProcess", arrayOf("appops", "set", context.packageName, "SYSTEM_ALERT_WINDOW", "allow"), null, null).get<Process>()
+            val exitValue = process.waitFor()
+            Log.i(TAG, "appops set SYSTEM_ALERT_WINDOW allow exit value: $exitValue")
+
+            val newMode = appOpsManager.checkOpNoThrow(android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW, android.os.Process.myUid(), context.packageName)
+            if (newMode == android.app.AppOpsManager.MODE_ALLOWED) {
+                Log.d(TAG, "SYSTEM_ALERT_WINDOW granted successfully via Shizuku.")
+                return
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to grant SYSTEM_ALERT_WINDOW via Shizuku: ${e.message}", e)
+            throw SecurityException("Can't grant SYSTEM_ALERT_WINDOW permission via Shizuku.")
+        }
+
+        throw SecurityException("Can't grant SYSTEM_ALERT_WINDOW permission.")
+    }
 
     @SuppressLint("MissingPermission")
     fun grantWriteSecureSettingsPermission() {

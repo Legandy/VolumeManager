@@ -126,7 +126,8 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
                 manager.grantWriteSecureSettingsPermission()
                 manager.enableAccessibilityService(ComponentName(getApplication<Application>().packageName, OverlayService::class.java.name))
                 manager.grantNotificationPolicyPermission() // Grant Notification Policy Access
-                navigateToOnboardingStep(OnboardingStep.OverlayPermission) // Navigate to overlay permission step
+                manager.grantSystemAlertWindowPermission() // Grant Overlay Permission
+                navigateToOnboardingStep(OnboardingStep.Complete) // Navigate to overlay permission step
             } catch (e: SecurityException) {
                 e.printStackTrace()
             }
