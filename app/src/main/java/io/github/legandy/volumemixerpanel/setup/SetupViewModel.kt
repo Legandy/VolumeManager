@@ -20,7 +20,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import android.provider.Settings
-import android.os.Build
 
 class SetupViewModel(application: Application, private val savedStateHandle: SavedStateHandle, private val dataStore: DataStore<Preferences>) : AndroidViewModel(application) {
 
@@ -74,11 +73,7 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     }
 
     private fun checkOverlayPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(getApplication())
-        } else {
-            true // Permission not needed on older Android versions
-        }
+        return Settings.canDrawOverlays(getApplication())
     }
 
     fun navigateToOnboardingStep(newStep: OnboardingStep) {
