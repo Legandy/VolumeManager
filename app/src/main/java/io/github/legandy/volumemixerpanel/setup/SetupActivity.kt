@@ -32,9 +32,10 @@ class SetupActivity : ComponentActivity() {
 
             VolumeMixerPanelTheme {
                 if (uiState.isOnboardingCompleted) {
-                    val intent = Intent(this, MainActivity::class.java)
-                    startActivity(intent)
-                    finish()
+                    // This is handled by the onOnboardingComplete callback,
+                    // but this check prevents the SetupScreen from briefly flashing
+                    // before navigating away.
+                    // We just need to make sure we don't navigate twice.
                 } else if (!uiState.hasShizukuReady) {
                     WaitingForShizukuScreen()
                 } else {
@@ -43,7 +44,9 @@ class SetupActivity : ComponentActivity() {
                         onNavigateTo = setupViewModel::navigateToOnboardingStep,
                         onOnboardingComplete = {
                             setupViewModel.completeOnboarding()
-                            val intent = Intent(this, MainActivity::class.java)
+                            val intent = Intent(this, MainActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
                             startActivity(intent)
                             finish()
                         },
