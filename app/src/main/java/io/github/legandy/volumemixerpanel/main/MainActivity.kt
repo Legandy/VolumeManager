@@ -14,6 +14,8 @@ import io.github.legandy.volumemixerpanel.setup.SetupActivity
 import io.github.legandy.volumemixerpanel.setup.SetupViewModel
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 import io.github.legandy.volumemixerpanel.setup.SetupViewModelFactory
+import io.github.legandy.volumemixerpanel.settings.SettingsScreen
+import io.github.legandy.volumemixerpanel.core.MyApplication
 
 class MainActivity : ComponentActivity() {
 
@@ -38,13 +40,14 @@ class MainActivity : ComponentActivity() {
                         // Launch SetupActivity if onboarding is not completed
                         val intent = Intent(this@MainActivity, SetupActivity::class.java)
                         startActivity(intent)
-                        finish() // Finish MainActivity to prevent it from showing up in the back stack
+                        // Temporarily removed finish() to test if the onboarding state updates correctly
+                        // finish() // Finish MainActivity to prevent it from showing up in the back stack
                     }
                 }
 
-                // Only show MainScreen if onboarding is completed
+                // Only show SettingsScreen if onboarding is completed
                 if (uiState.isOnboardingCompleted) {
-                    MainScreen()
+                    SettingsScreen(settingsDataStore = MyApplication.settings, manager = MyApplication.manager)
                 }
             }
         }
