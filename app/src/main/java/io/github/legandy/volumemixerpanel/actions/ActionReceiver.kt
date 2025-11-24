@@ -21,7 +21,7 @@ class ActionReceiver : BroadcastReceiver() {
         }
 
         try {
-            ContextCompat.startForegroundService(context, serviceIntent)
+            context.startService(serviceIntent)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start OverlayService for action: $action", e)
         }

@@ -57,15 +57,16 @@
         <activity
             android:name=".actions.ShortcutProxyActivity"
             android:exported="true"
-            android:theme="@style/Theme.VolumeMixerPanel.Transparent"
-            android:taskAffinity=""
-            android:excludeFromRecents="true">
-            <intent-filter>
-                <action android:name="volumemixerpanel.action.SHOW_OVERLAY" />
-                <action android:name="volumemixerpanel.action.HIDE_OVERLAY" />
-                <action android:name="volumemixerpanel.action.TOGGLE_OVERLAY" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
+            android:theme="@android:style/Theme.NoDisplay"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""> <intent-filter>
+            <action android:name="io.github.legandy.volumemixerpanel.intent.ACTION_SHOW_OVERLAY" />
+            <action android:name="io.github.legandy.volumemixerpanel.intent.ACTION_HIDE_OVERLAY" />
+            <action android:name="io.github.legandy.volumemixerpanel.intent.ACTION_TOGGLE_OVERLAY" />
+            <action android:name="io.github.legandy.volumemixerpanel.intent.ACTION_TOGGLE_SILENT" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
         </activity>
 
         <service
@@ -85,9 +86,10 @@
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="volumemixerpanel.action.SHOW_OVERLAY" />
-                <action android:name="volumemixerpanel.action.HIDE_OVERLAY" />
-                <action android:name="volumemixerpanel.action.TOGGLE_OVERLAY" />
+                <action android:name="io.github.legandy.volumemixerpanel.intent.ACTION_SHOW_OVERLAY" />
+                <action android:name="io.github.legandy.volumemixerpanel.intent.ACTION_HIDE_OVERLAY" />
+                <action android:name="io.github.legandy.volumemixerpanel.intent.ACTION_TOGGLE_OVERLAY" />
+                <action android:name="io.github.legandy.volumemixerpanel.intent.ACTION_TOGGLE_SILENT" />
             </intent-filter>
         </receiver>
 

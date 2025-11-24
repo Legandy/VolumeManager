@@ -84,35 +84,41 @@ class ShortcutActivity : ComponentActivity() {
 
     @Suppress("DEPRECATION")
     private fun createShortcut(info: ShortcutInfo) {
-        val shortcutIntent = Intent(applicationContext, ShortcutProxyActivity::class.java).apply {
+        // 1. Setup the Proxy Intent (Legacy fallback)
+        val proxyIntent = Intent(applicationContext, ShortcutProxyActivity::class.java).apply {
             action = info.action
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            addCategory(Intent.CATEGORY_DEFAULT)
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP) // Helps prevent animation glitches
+        }
+
+        // 2. Setup the Direct Receiver Intent (Modern path)
+        val receiverIntent = Intent(applicationContext, ActionReceiver::class.java).apply {
+            action = info.action
+            setPackage(packageName) // Important for broadcasts
         }
 
         val resultIntent = Intent().apply {
             putExtra(Intent.EXTRA_SHORTCUT_NAME, info.label)
+            putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+                Intent.ShortcutIconResource.fromContext(applicationContext, R.mipmap.ic_launcher))
 
-            // Check if the calling app requests a PendingIntent (modern approach)
             val requestPendingIntent = intent.getBooleanExtra(EXTRA_REQUEST_PENDING_INTENT, false)
 
             if (requestPendingIntent) {
-                // Modern approach: Return a PendingIntent
-                val pendingIntent = PendingIntent.getActivity(
+                // MODERN WAY: If the gesture app asks for a PendingIntent,
+                // we give it a BROADCAST directly. This completely skips the proxy.
+                val pendingIntent = PendingIntent.getBroadcast(
                     applicationContext,
-                    0, // Request code, can be unique if needed
-                    shortcutIntent,
+                    0,
+                    receiverIntent, // Points directly to ActionReceiver
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, pendingIntent)
             } else {
-                // Deprecated/Old approach: Return a direct Intent for compatibility with older apps/launchers
-                putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
+                // LEGACY WAY: If it wants a raw Intent, we MUST use the Proxy
+                // because gesture apps usually call startActivity(), not sendBroadcast().
+                putExtra(Intent.EXTRA_SHORTCUT_INTENT, proxyIntent)
             }
-
-            // Include icon resource for compatibility with older launchers/apps
-            putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                Intent.ShortcutIconResource.fromContext(applicationContext, R.mipmap.ic_launcher))
         }
 
         setResult(RESULT_OK, resultIntent)

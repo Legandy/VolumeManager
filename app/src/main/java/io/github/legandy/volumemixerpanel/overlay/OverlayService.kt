@@ -37,13 +37,15 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import io.github.legandy.volumemixerpanel.actions.ACTION_SHOW_OVERLAY
+import io.github.legandy.volumemixerpanel.actions.ACTION_HIDE_OVERLAY
+import io.github.legandy.volumemixerpanel.actions.ACTION_TOGGLE_OVERLAY
+import io.github.legandy.volumemixerpanel.actions.ACTION_TOGGLE_Silent
 
 class OverlayService : AccessibilityService() {
     companion object {
         private const val TAG = "VolumeMixerPanel.Service"
-        const val ACTION_SHOW_OVERLAY = "io.github.legandy.volumemixerpanel.action.SHOW_OVERLAY"
-        const val ACTION_HIDE_OVERLAY = "io.github.legandy.volumemixerpanel.action.HIDE_OVERLAY"
-        const val ACTION_TOGGLE_OVERLAY = "io.github.legandy.volumemixerpanel.action.TOGGLE_OVERLAY"
+        // Removed redundant action definitions here
     }
 
     private val windowManager: WindowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -77,6 +79,7 @@ class OverlayService : AccessibilityService() {
             ACTION_SHOW_OVERLAY -> showView()
             ACTION_HIDE_OVERLAY -> hideView()
             ACTION_TOGGLE_OVERLAY -> if (isOverlayVisible) hideView() else showView()
+            ACTION_TOGGLE_Silent -> Log.d(TAG, "ACTION_TOGGLE_Silent received, implement logic here")
         }
         return super.onStartCommand(intent, flags, startId)
     }
