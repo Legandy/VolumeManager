@@ -13,7 +13,6 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -45,15 +44,23 @@ class ShizukuManager(
         private const val TAG = "VolumeMixerPanel.ShizukuManager"
         private const val SHIZUKU_REQ_CODE = 42
         private const val SERVICE_NAME_SEPARATOR = ":"
+
+        // Defined methods
         private var getClientPidMethod: Method? = null
         private var getPlayerProxyMethod: Method? = null
         private var playerProxySetVolumeMethod: Method? = null
+        private var getPlayerInterfaceIdMethod: Method? = null // <--- ADD THIS
 
         init {
             try {
                 val audioPlaybackCls = AudioPlaybackConfiguration::class.java
                 getClientPidMethod = audioPlaybackCls.getDeclaredMethod("getClientPid")
                 getPlayerProxyMethod = audioPlaybackCls.getDeclaredMethod("getPlayerProxy")
+
+                // <--- ADD THIS LINE
+                // getPlayerInterfaceId is public API 24+, but we use reflection to be safe and consistent
+                getPlayerInterfaceIdMethod = audioPlaybackCls.getDeclaredMethod("getPlayerInterfaceId")
+
                 playerProxySetVolumeMethod = Class.forName("android.media.PlayerProxy").getDeclaredMethod("setVolume", Float::class.javaPrimitiveType)
             } catch (t: Throwable) {
                 Log.w(TAG, "Critical reflection init failed: ${t.message}")
@@ -376,7 +383,7 @@ class ShizukuManager(
 
     private fun handlePlaybackConfigs(configs: List<AudioPlaybackConfiguration>) {
         scope.launch {
-            Log.d(TAG, "handlePlaybackConfigs called with ${configs.size} configurations.")
+            // 1. Get running processes
             val runningProcesses = withContext(Dispatchers.Default) {
                 try {
                     shizukuActivityManager?.call("getRunningAppProcesses")?.get<List<ActivityManager.RunningAppProcessInfo>>()
@@ -386,46 +393,40 @@ class ShizukuManager(
                 }
             }
 
-            if (runningProcesses.isNullOrEmpty()) {
-                Log.w(TAG, "Could not retrieve running process list.")
-                return@launch
-            }
+            if (runningProcesses.isNullOrEmpty()) return@launch
 
-            // Clear players for all currently tracked apps to ensure fresh state and re-application of volume
-            apps.values.forEach { it.players.clear() }
-            Log.d(TAG, "Cleared players for all apps.")
-
-            // Map to hold (packageName -> list of playerProxies and their configs) for currently active players
-            val currentActivePlayersMap = mutableMapOf<String, MutableList<Pair<Any, AudioPlaybackConfiguration>>>()
+            // 2. Identify active players
+            val activeProxies = mutableMapOf<String, MutableList<Pair<Any, AudioPlaybackConfiguration>>>()
 
             withContext(Dispatchers.Default) {
                 configs.forEach { cfg ->
                     val pid = try { getClientPidMethod?.invoke(cfg) as? Int } catch (_: Throwable) { null }
                     val pkgName = runningProcesses.find { it.pid == pid }?.processName?.split(":")?.firstOrNull()
-                    Log.d(TAG, "Processing config: clientPid=$pid, pkgName=$pkgName, usage=${cfg.audioAttributes.usage}, contentType=${cfg.audioAttributes.contentType}, cfgHash=${cfg.hashCode()}")
 
-                    if (pid == null || pkgName == null) {
-                        Log.w(TAG, "Could not get pid or package name for config: $cfg")
-                        return@forEach
-                    }
-
-                    val playerProxy = try { getPlayerProxyMethod?.invoke(cfg) } catch (t: Throwable) {
-                        Log.e(TAG, "Failed to get PlayerProxy for $pkgName (pid=$pid): ${t.message}", t)
-                        null
-                    }
-
-                    if (playerProxy != null) {
-                        Log.d(TAG, "Found PlayerProxy for $pkgName (pid=$pid), cfgHash=${cfg.hashCode()}.")
-                        currentActivePlayersMap.getOrPut(pkgName) { mutableListOf() }.add(playerProxy to cfg)
-                    } else {
-                        Log.w(TAG, "PlayerProxy is null for $pkgName (pid=$pid), cfgHash=${cfg.hashCode()}.")
+                    if (pid != null && pkgName != null) {
+                        try {
+                            val playerProxy = getPlayerProxyMethod?.invoke(cfg)
+                            if (playerProxy != null) {
+                                activeProxies.getOrPut(pkgName) { mutableListOf() }.add(playerProxy to cfg)
+                            }
+                        } catch (t: Throwable) {
+                            Log.w(TAG, "Failed to get PlayerProxy", t)
+                        }
                     }
                 }
             }
 
-            // Now, update the 'apps' map and their 'players' lists on the Main dispatcher
+            // 3. Update State on Main Thread
             withContext(Dispatchers.Main) {
-                currentActivePlayersMap.forEach { (pkgName, playerConfigPairs) ->
+                // A. Cleanup inactive apps
+                apps.keys.forEach { pkg ->
+                    if (!activeProxies.containsKey(pkg)) {
+                        apps[pkg]?.players?.clear()
+                    }
+                }
+
+                // B. Update active apps
+                activeProxies.forEach { (pkgName, playerConfigPairs) ->
                     val appState = apps.getOrPut(pkgName) {
                         try {
                             val appInfo = pm.getApplicationInfo(pkgName, 0)
@@ -436,27 +437,45 @@ class ShizukuManager(
                                 initialVolume = volumesDataStore.data.first()[floatPreferencesKey("vol_$pkgName")] ?: 1f
                             )
                         } catch (e: Exception) {
-                            Log.e(TAG, "Failed to get app info for $pkgName, creating dummy AppState", e)
                             AppState(pkgName, pkgName, ImageBitmap(1,1), initialVolume = 1f)
                         }
                     }
 
-                    // Create a new list of players for this app based on current active configs
-                    val newPlayersListForApp = mutableListOf<PlayerEntry>()
-                    playerConfigPairs.forEach { (playerProxy, cfg) ->
-                        // Apply volume immediately, mirroring Manager_old.kt behavior
-                        try {
-                            playerProxySetVolumeMethod?.invoke(playerProxy, appState.volume)
-                            Log.d(TAG, "AppState setter: Applied volume ${appState.volume} to player for ${pkgName}, cfgHash=${cfg.hashCode()}.")
-                        } catch (t: Throwable) {
-                            Log.w(TAG, "AppState setter: PlayerProxy.setVolume failed for ${pkgName}, cfgHash=${cfg.hashCode()}", t)
+                    val newPlayerList = mutableListOf<PlayerEntry>()
+
+                    playerConfigPairs.forEach { (proxy, cfg) ->
+                        // Get the ID via reflection
+                        val currentId = try {
+                            getPlayerInterfaceIdMethod?.invoke(cfg) as? Int
+                        } catch (_: Exception) { -1 }
+
+                        // Compare using the ID
+                        val existingPlayer = appState.players.find { entry ->
+                            val entryId = try {
+                                getPlayerInterfaceIdMethod?.invoke(entry.config) as? Int
+                            } catch (_: Exception) { -2 }
+
+                            // Match if IDs are valid and equal
+                            entryId != null && currentId != null && entryId == currentId
                         }
-                        newPlayersListForApp.add(PlayerEntry(cfg, playerProxy))
+
+                        if (existingPlayer != null) {
+                            // CASE 1: Existing Player -> Update reference only
+                            newPlayerList.add(existingPlayer.copy(config = cfg, proxy = proxy))
+                        } else {
+                            // CASE 2: New Player -> Apply Volume
+                            try {
+                                playerProxySetVolumeMethod?.invoke(proxy, appState.volume)
+                                Log.d(TAG, "Applied volume ${appState.volume} to NEW player (ID: $currentId) for $pkgName")
+                            } catch (t: Throwable) {
+                                Log.e(TAG, "Failed to set volume for new player", t)
+                            }
+                            newPlayerList.add(PlayerEntry(cfg, proxy))
+                        }
                     }
 
-                    // Replace the app's players list with the new one
-                    appState.players.addAll(newPlayersListForApp)
-                    Log.d(TAG, "Updated ${newPlayersListForApp.size} players for app $pkgName. Current appState.volume: ${appState.volume}")
+                    appState.players.clear()
+                    appState.players.addAll(newPlayerList)
                 }
             }
         }
@@ -466,7 +485,15 @@ class ShizukuManager(
         val v = volume.coerceIn(0f, 1f)
         val app = apps[packageName] ?: return
 
-        app.volume = v // This will now trigger the custom setter in AppState and apply volume to players
+        app.volume = v
+
+        app.players.forEach { entry ->
+            try {
+                playerProxySetVolumeMethod?.invoke(entry.proxy, v)
+            } catch (t: Throwable) {
+                Log.w(TAG, "PlayerProxy.setVolume failed for $packageName", t)
+            }
+        }
 
         scope.launch {
             volumesDataStore.edit { prefs -> prefs[floatPreferencesKey("vol_$packageName")] = v }
@@ -494,29 +521,19 @@ class ShizukuManager(
         }
     }
 
-    data class PlayerEntry(val config: AudioPlaybackConfiguration, val proxy: Any?)
+    // It must have both 'config' and 'proxy'
+    data class PlayerEntry(
+        val config: AudioPlaybackConfiguration,
+        val proxy: Any?
+    )
 
     data class AppState(
         val packageName: String,
         val label: String,
-        val icon: ImageBitmap, // Use stable ImageBitmap instead of Drawable
+        val icon: ImageBitmap,
         val players: MutableList<PlayerEntry> = mutableListOf(),
-        private val initialVolume: Float = 1f
+        val initialVolume: Float = 1f
     ) {
-        private var _volume by mutableFloatStateOf(initialVolume)
-
-        var volume: Float
-            get() = _volume
-            set(value) {
-                _volume = value
-                players.forEach { entry ->
-                    try {
-                        playerProxySetVolumeMethod?.invoke(entry.proxy, value)
-                        Log.d(TAG, "AppState setter: Applied volume $value to player for ${packageName}, cfgHash=${entry.config.hashCode()}.")
-                    } catch (t: Throwable) {
-                        Log.w(TAG, "AppState setter: PlayerProxy.setVolume failed for ${packageName}, cfgHash=${entry.config.hashCode()}", t)
-                    }
-                }
-            }
+        var volume by mutableStateOf(initialVolume)
     }
 }
