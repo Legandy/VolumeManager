@@ -31,12 +31,7 @@ class SetupActivity : ComponentActivity() {
             val uiState by setupViewModel.uiState.collectAsState()
 
             VolumeMixerPanelTheme {
-                if (uiState.isOnboardingCompleted) {
-                    // This is handled by the onOnboardingComplete callback,
-                    // but this check prevents the SetupScreen from briefly flashing
-                    // before navigating away.
-                    // We just need to make sure we don't navigate twice.
-                } else if (!uiState.hasShizukuReady) {
+                if (!uiState.hasShizukuReady) {
                     WaitingForShizukuScreen()
                 } else {
                     SetupScreen(
@@ -62,7 +57,7 @@ class SetupActivity : ComponentActivity() {
                         },
                         onOpenOverlayPermissionClick = { openOverlayPermissionSettings() },
                         onGrantAllPermissionsClick = { setupViewModel.grantAllPermissionsWithShizuku() },
-                        canGoNext = uiState.canGoNext // Pass the new state
+                        canGoNext = uiState.canGoNext
                     )
                 }
             }

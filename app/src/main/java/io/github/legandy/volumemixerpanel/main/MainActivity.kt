@@ -16,6 +16,8 @@ import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 import io.github.legandy.volumemixerpanel.setup.SetupViewModelFactory
 import io.github.legandy.volumemixerpanel.settings.SettingsScreen
 import io.github.legandy.volumemixerpanel.core.MyApplication
+import android.net.Uri
+import android.provider.Settings
 
 class MainActivity : ComponentActivity() {
 
@@ -32,21 +34,33 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             VolumeMixerPanelTheme {
-                // Observe the onboarding status
                 val uiState by setupViewModel.uiState.collectAsState()
 
-                LaunchedEffect(uiState.isOnboardingCompleted) {
-                    if (!uiState.isOnboardingCompleted) {
-                        // Launch SetupActivity if onboarding is not completed
+                LaunchedEffect(uiState.isOnboardingCompleted, uiState.hasShizukuReady, uiState.shizukuPermission, uiState.isAccessibilityEnabled, uiState.hasNotificationPolicyAccess, uiState.hasOverlayPermission) {
+                    val allPermissionsGranted = uiState.hasShizukuReady &&
+                            uiState.shizukuPermission &&
+                            uiState.isAccessibilityEnabled &&
+                            uiState.hasNotificationPolicyAccess &&
+                            uiState.hasOverlayPermission
+
+                    if (!uiState.isOnboardingCompleted || !allPermissionsGranted) {
+                        // Launch SetupActivity if onboarding is not completed OR if any required permission is not granted
                         val intent = Intent(this@MainActivity, SetupActivity::class.java)
                         startActivity(intent)
-                        // Temporarily removed finish() to test if the onboarding state updates correctly
-                        // finish() // Finish MainActivity to prevent it from showing up in the back stack
+                        finish() // Finish MainActivity to prevent it from showing up in the back stack
+                    } else {
+                        // All conditions met, show SettingsScreen
+                        // This block will only be reached if isOnboardingCompleted is true AND allPermissionsGranted is true
                     }
                 }
 
-                // Only show SettingsScreen if onboarding is completed
-                if (uiState.isOnboardingCompleted) {
+                // Only show SettingsScreen if onboarding is completed AND all permissions are granted
+                if (uiState.isOnboardingCompleted &&
+                    uiState.hasShizukuReady &&
+                    uiState.shizukuPermission &&
+                    uiState.isAccessibilityEnabled &&
+                    uiState.hasNotificationPolicyAccess &&
+                    uiState.hasOverlayPermission) {
                     SettingsScreen(settingsDataStore = MyApplication.settings, manager = MyApplication.manager)
                 }
             }
