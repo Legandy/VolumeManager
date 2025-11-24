@@ -226,7 +226,8 @@ private fun OverlayContent(
                 // Right Group
                 Row {
                     IconButton(onClick = {
-                        overlayViewModel.setDnd(!uiState.isDndOn)
+                        //overlayViewModel.setDndAPI(!uiState.isDndOn)
+                        overlayViewModel.setDndShizuku(!uiState.isDndOn)
                         resetTimer()
                     }) {
                         Icon(

@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0") // Added viewModelScope
 
     // Coroutines & DataStore
     implementation(libs.kotlinx.coroutines.android)

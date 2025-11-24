@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.app.NotificationManager
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.core.content.ContextCompat
 import io.github.legandy.volumemixerpanel.core.MyApplication
@@ -64,12 +65,19 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
             }
         }
 
+        // Calculate DND state into a local variable
+        val isDndActive = notificationManager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL
+
+        // Log the confirmed system state
+        Log.d("OverlayViewModel", "refreshState: DND is ${if (isDndActive) "ON" else "OFF"}")
+
+        // Update the UI state using the variable
         _uiState.value = SystemAudioUiState(
             volumes = volumes,
             maxVolumes = maxVolumes,
             mutedStreams = mutedStreams,
             ringerMode = audioManager.ringerMode,
-            isDndOn = notificationManager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL,
+            isDndOn = isDndActive, // Use the local variable here
             deviceType = getMediaOutputDeviceType()
         )
     }
@@ -89,7 +97,7 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
             return wiredHeadset.type
         }
 
-        // Finally, default to built-in speaker if no other audio output is found
+        // Default to built-in speaker if no other audio output is found
         val speaker = devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
         if (speaker != null) {
             return speaker.type
@@ -110,12 +118,16 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
         manager.setRingerMode(mode)
     }
 
-    fun setDnd(enabled: Boolean) {
-        notificationManager.setInterruptionFilter(
-            if (enabled) NotificationManager.INTERRUPTION_FILTER_PRIORITY
-            else NotificationManager.INTERRUPTION_FILTER_ALL
-        )
+    fun setDndShizuku(enabled: Boolean) {
+        // Optimistic update for UI responsiveness
+        val current = _uiState.value
+        _uiState.value = current.copy(isDndOn = enabled)
+
+        // Perform actual logic
+        manager.setDndShizuku(enabled)
     }
+
+    
 
     override fun onCleared() {
         super.onCleared()

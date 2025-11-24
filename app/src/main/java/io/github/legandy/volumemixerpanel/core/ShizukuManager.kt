@@ -35,7 +35,6 @@ import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import java.lang.reflect.Method
 import android.app.NotificationManager
-import android.content.Intent
 
 @SuppressLint("PrivateApi")
 class ShizukuManager(
@@ -179,6 +178,82 @@ class ShizukuManager(
     fun setSilent() {
         setRingerMode(AudioManager.RINGER_MODE_SILENT)
         Log.d(TAG, "Set ringer mode to SILENT via ShizukuManager.setSilent()")
+    }
+
+    fun getCurrentDndMode(): Int {
+        return try {
+            Settings.Global.getInt(context.contentResolver, "zen_mode", 0)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get current DND mode.", e)
+            0 // Assume DND is off on failure
+        }
+    }
+
+    fun setDndShizuku(enable: Boolean) {
+        // 1. Check Shizuku availability
+        if (!Shizuku.pingBinder()) {
+            Log.e("DND", "Shizuku not running. Falling back to API.")
+            setDndAPI()
+            return
+        }
+
+        // 2. Check Permission
+        if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+            Shizuku.requestPermission(0)
+            return
+        }
+
+        // "priority" = DND ON (InterruptionFilter 2)
+        // "all" = DND OFF (InterruptionFilter 1)
+        val mode = if (enable) "priority" else "all"
+
+        val command = "cmd notification set_dnd $mode"
+
+        try {
+            val process = Reflect.onClass(Shizuku::class.java)
+                .call("newProcess", arrayOf("sh", "-c", command), null, null)
+                .get<Process>()
+
+            val exitCode = process.waitFor()
+
+            if (exitCode == 0) {
+                Log.d("DND", "Successfully set DND via Shizuku cmd.")
+            } else {
+                Log.e("DND", "Shizuku command failed with exit code: $exitCode")
+                setDndAPI() // Fallback
+            }
+        } catch (e: Exception) {
+            Log.e("DND", "Exception executing Shizuku command", e)
+            setDndAPI() // Fallback
+        }
+    }
+
+    private fun setDndAPI() {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
+            Log.w(TAG, "Cannot toggle DND via fallback: Notification Policy Access not granted.")
+            return
+        }
+
+        try {
+            val currentFilter = notificationManager.currentInterruptionFilter
+
+            val newFilter = if (currentFilter == NotificationManager.INTERRUPTION_FILTER_ALL) {
+                NotificationManager.INTERRUPTION_FILTER_PRIORITY // Turn ON DND
+            } else {
+                NotificationManager.INTERRUPTION_FILTER_ALL // Turn OFF DND
+            }
+            notificationManager.setInterruptionFilter(newFilter)
+
+            //Reading the state immediately might still show the old value due to system lag.
+            Log.d(TAG, "Toggled DND via API. Old: $currentFilter, New Target: $newFilter")
+
+            // Read the system state immediately (might be flaky):
+            Log.d(TAG, "Immediate system state check: ${getCurrentDndMode()}")
+
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Failed to toggle DND via fallback due to SecurityException.", e)
+        }
     }
     
     @SuppressLint("NewApi")
@@ -372,9 +447,9 @@ class ShizukuManager(
                         // Apply volume immediately, mirroring Manager_old.kt behavior
                         try {
                             playerProxySetVolumeMethod?.invoke(playerProxy, appState.volume)
-                            Log.d(TAG, "Applied volume ${appState.volume} to player for $pkgName, cfgHash=${cfg.hashCode()}.")
+                            Log.d(TAG, "AppState setter: Applied volume ${appState.volume} to player for ${pkgName}, cfgHash=${cfg.hashCode()}.")
                         } catch (t: Throwable) {
-                            Log.w(TAG, "PlayerProxy.setVolume failed for $pkgName, cfgHash=${cfg.hashCode()}", t)
+                            Log.w(TAG, "AppState setter: PlayerProxy.setVolume failed for ${pkgName}, cfgHash=${cfg.hashCode()}", t)
                         }
                         newPlayersListForApp.add(PlayerEntry(cfg, playerProxy))
                     }
