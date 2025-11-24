@@ -35,6 +35,7 @@ import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import java.lang.reflect.Method
 import android.app.NotificationManager
+import android.content.Intent
 
 @SuppressLint("PrivateApi")
 class ShizukuManager(
@@ -173,6 +174,11 @@ class ShizukuManager(
                 Log.e(TAG, "Public API fallback also failed", fe)
             }
         }
+    }
+
+    fun setSilent() {
+        setRingerMode(AudioManager.RINGER_MODE_SILENT)
+        Log.d(TAG, "Set ringer mode to SILENT via ShizukuManager.setSilent()")
     }
     
     @SuppressLint("NewApi")

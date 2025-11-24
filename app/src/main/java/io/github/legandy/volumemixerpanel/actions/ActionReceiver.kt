@@ -4,8 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.core.content.ContextCompat
 import io.github.legandy.volumemixerpanel.overlay.OverlayService
+import io.github.legandy.volumemixerpanel.core.MyApplication
 
 class ActionReceiver : BroadcastReceiver() {
     companion object {
@@ -16,14 +16,21 @@ class ActionReceiver : BroadcastReceiver() {
         val action = intent.action ?: return
         Log.d(TAG, "Received action: $action")
 
-        val serviceIntent = Intent(context, OverlayService::class.java).apply {
-            this.action = action
-        }
-
-        try {
-            context.startService(serviceIntent)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start OverlayService for action: $action", e)
+        when (action) {
+            ACTION_TOGGLE_SILENT -> {
+                Log.d(TAG, "Handling ACTION_TOGGLE_SILENT")
+                MyApplication.manager.setSilent()
+            }
+            else -> {
+                val serviceIntent = Intent(context, OverlayService::class.java).apply {
+                    this.action = action
+                }
+                try {
+                    context.startService(serviceIntent)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to start OverlayService for action: $action", e)
+                }
+            }
         }
     }
 }

@@ -40,7 +40,6 @@ import kotlinx.coroutines.launch
 import io.github.legandy.volumemixerpanel.actions.ACTION_SHOW_OVERLAY
 import io.github.legandy.volumemixerpanel.actions.ACTION_HIDE_OVERLAY
 import io.github.legandy.volumemixerpanel.actions.ACTION_TOGGLE_OVERLAY
-import io.github.legandy.volumemixerpanel.actions.ACTION_TOGGLE_Silent
 
 class OverlayService : AccessibilityService() {
     companion object {
@@ -79,7 +78,6 @@ class OverlayService : AccessibilityService() {
             ACTION_SHOW_OVERLAY -> showView()
             ACTION_HIDE_OVERLAY -> hideView()
             ACTION_TOGGLE_OVERLAY -> if (isOverlayVisible) hideView() else showView()
-            ACTION_TOGGLE_Silent -> Log.d(TAG, "ACTION_TOGGLE_Silent received, implement logic here")
         }
         return super.onStartCommand(intent, flags, startId)
     }
