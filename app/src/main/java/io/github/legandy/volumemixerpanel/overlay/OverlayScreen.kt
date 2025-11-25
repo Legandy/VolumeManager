@@ -83,7 +83,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.legandy.volumemixerpanel.main.MainActivity
-import io.github.legandy.volumemixerpanel.core.ShizukuManager
+import io.github.legandy.volumemixerpanel.core.VolumeManager
 import io.github.legandy.volumemixerpanel.settings.AppFilterMode
 import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
@@ -102,7 +102,7 @@ fun OverlayScreen(
     resetTimer: () -> Unit,
     pauseTimer: () -> Unit,
     resumeTimer: () -> Unit,
-    manager: ShizukuManager,
+    volumeManager: VolumeManager,
     settingsDataStore: SettingsDataStore
 ) {
     VolumeMixerPanelTheme {
@@ -118,7 +118,7 @@ fun OverlayScreen(
                 resetTimer = resetTimer,
                 pauseTimer = pauseTimer,
                 resumeTimer = resumeTimer,
-                manager = manager,
+                volumeManager = volumeManager,
                 settingsDataStore = settingsDataStore
             )
         }
@@ -132,7 +132,7 @@ private fun OverlayContent(
     resetTimer: () -> Unit,
     pauseTimer: () -> Unit,
     resumeTimer: () -> Unit,
-    manager: ShizukuManager,
+    volumeManager: VolumeManager,
     settingsDataStore: SettingsDataStore
 ) {
     var selectedTab by remember { mutableStateOf(OverlayTab.SYSTEM) }
@@ -158,7 +158,7 @@ private fun OverlayContent(
                 ) { tab ->
                     when (tab) {
                         OverlayTab.SYSTEM -> SystemVolumeSliders(overlayViewModel, pauseTimer, resumeTimer, resetTimer)
-                        OverlayTab.APPS -> AppVolumeSliders(manager, settingsDataStore, pauseTimer, resumeTimer, resetTimer)
+                        OverlayTab.APPS -> AppVolumeSliders(volumeManager, settingsDataStore, pauseTimer, resumeTimer, resetTimer)
                     }
                 }
             }
@@ -263,14 +263,14 @@ private fun SystemVolumeSliders(overlayViewModel: OverlayViewModel, pauseTimer: 
 }
 
 @Composable
-private fun AppVolumeSliders(manager: ShizukuManager, settingsDataStore: SettingsDataStore, pauseTimer: () -> Unit, resumeTimer: () -> Unit, resetTimer: () -> Unit) {
+private fun AppVolumeSliders(volumeManager: VolumeManager, settingsDataStore: SettingsDataStore, pauseTimer: () -> Unit, resumeTimer: () -> Unit, resetTimer: () -> Unit) {
     val filterMode by settingsDataStore.appFilterMode.collectAsState(initial = AppFilterMode.SHOW_ALL)
     val blacklist by settingsDataStore.appBlacklist.collectAsState(initial = emptySet())
     val whitelist by settingsDataStore.appWhitelist.collectAsState(initial = emptySet())
     val lastAppVolumes by settingsDataStore.lastAppVolumes.collectAsState(initial = emptyMap())
 
 
-    val activeApps = manager.apps.values
+    val activeApps = volumeManager.apps.values
         .filter { it.players.isNotEmpty() }
         .filter { app ->
             when (filterMode) {
@@ -301,7 +301,7 @@ private fun AppVolumeSliders(manager: ShizukuManager, settingsDataStore: Setting
         }
         else {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                activeApps.forEach { app -> AppSliderRow(app = app, manager = manager, settingsDataStore = settingsDataStore, lastAppVolumes = lastAppVolumes, pauseTimer = pauseTimer, resumeTimer = resumeTimer, resetTimer = resetTimer) }
+                activeApps.forEach { app -> AppSliderRow(app = app, volumeManager = volumeManager, settingsDataStore = settingsDataStore, lastAppVolumes = lastAppVolumes, pauseTimer = pauseTimer, resumeTimer = resumeTimer, resetTimer = resetTimer) }
             }
         }
     }
@@ -488,8 +488,8 @@ private fun StreamSliderRow(
 
 @Composable
 private fun AppSliderRow(
-    app: ShizukuManager.AppState,
-    manager: ShizukuManager,
+    app: VolumeManager.AppState,
+    volumeManager: VolumeManager,
     settingsDataStore: SettingsDataStore,
     lastAppVolumes: Map<String, Float>,
     pauseTimer: () -> Unit,
@@ -532,11 +532,11 @@ private fun AppSliderRow(
             onClick = {
                 scope.launch {
                     if (isMuted) {
-                        manager.setAppVolume(app.packageName, lastVolume)
+                        volumeManager.setAppVolume(app.packageName, lastVolume)
                         settingsDataStore.setLastAppVolume(app.packageName, lastVolume)
                     } else {
                         settingsDataStore.setLastAppVolume(app.packageName, app.volume)
-                        manager.setAppVolume(app.packageName, 0f)
+                        volumeManager.setAppVolume(app.packageName, 0f)
                     }
                 }
                 resumeTimer()
@@ -555,7 +555,7 @@ private fun AppSliderRow(
         Slider(
             value = app.volume,
             onValueChange = { newVol ->
-                manager.setAppVolume(app.packageName, newVol)
+                volumeManager.setAppVolume(app.packageName, newVol)
                 if (newVol > 0f) {
                     lastVolume = newVol
                     scope.launch { settingsDataStore.setLastAppVolume(app.packageName, newVol) }

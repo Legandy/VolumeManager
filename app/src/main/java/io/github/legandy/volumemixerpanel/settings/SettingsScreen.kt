@@ -71,6 +71,7 @@ import io.github.legandy.volumemixerpanel.app.AppSettingsActivity
 import io.github.legandy.volumemixerpanel.core.ShizukuManager
 import kotlinx.coroutines.launch
 import io.github.legandy.volumemixerpanel.R
+import io.github.legandy.volumemixerpanel.core.VolumeManager
 
 @Composable
 fun SettingSwitch(
@@ -148,7 +149,8 @@ fun SettingClickableItem(
 @Composable
 fun SettingsScreen(
     settingsDataStore: SettingsDataStore,
-    manager: ShizukuManager
+    volumeManager: VolumeManager,
+    shizukuManager: ShizukuManager
 ) {
     val viewModel: SettingsViewModel = viewModel()
     val scope = rememberCoroutineScope() // Added rememberCoroutineScope
@@ -171,8 +173,8 @@ fun SettingsScreen(
                 title = { Text("Settings", fontWeight = FontWeight.Medium) },
                 navigationIcon = {
                     val statusColor = when {
-                        manager.shizukuReady && manager.shizukuPermission -> MaterialTheme.colorScheme.primary
-                        manager.shizukuReady -> Color(0xFFFFA500) // Orange for warning
+                        shizukuManager.shizukuReady && shizukuManager.shizukuPermission -> MaterialTheme.colorScheme.primary
+                        shizukuManager.shizukuReady -> Color(0xFFFFA500) // Orange for warning
                         else -> MaterialTheme.colorScheme.error
                     }
                     Icon(
@@ -224,7 +226,7 @@ fun SettingsScreen(
                     .weight(1f) // Fill remaining space
             ) { page ->
                 when (page) {
-                    0 -> VolumeControlTab(manager = manager, settingsDataStore = settingsDataStore)
+                    0 -> VolumeControlTab(volumeManager = volumeManager, settingsDataStore = settingsDataStore)
                     1 -> AppFilteringTab(viewModel = viewModel)
                     2 -> OverlaySettingsTab(settingsDataStore = settingsDataStore)
                 }
@@ -244,9 +246,9 @@ private fun AppSettingsButton() {
 }
 
 @Composable
-fun VolumeControlTab(manager: ShizukuManager, settingsDataStore: SettingsDataStore) {
+fun VolumeControlTab(volumeManager: VolumeManager, settingsDataStore: SettingsDataStore) {
     val activeApps =
-        manager.apps.values.filter { it.players.isNotEmpty() }.sortedBy { it.label.lowercase() }
+        volumeManager.apps.values.filter { it.players.isNotEmpty() }.sortedBy { it.label.lowercase() }
     val lastAppVolumes by settingsDataStore.lastAppVolumes.collectAsState(initial = emptyMap())
 
 
@@ -257,7 +259,7 @@ fun VolumeControlTab(manager: ShizukuManager, settingsDataStore: SettingsDataSto
     ) {
         if (activeApps.isNotEmpty()) {
             items(activeApps, key = { it.packageName }) { app ->
-                AppVolumeCardInSettings(app, manager, lastAppVolumes, settingsDataStore)
+                AppVolumeCardInSettings(app, volumeManager, lastAppVolumes, settingsDataStore)
             }
         } else {
             item {
@@ -274,8 +276,8 @@ fun VolumeControlTab(manager: ShizukuManager, settingsDataStore: SettingsDataSto
 
 @Composable
 private fun AppVolumeCardInSettings(
-    app: ShizukuManager.AppState,
-    manager: ShizukuManager,
+    app: VolumeManager.AppState,
+    volumeManager: VolumeManager,
     lastAppVolumes: Map<String, Float>,
     settingsDataStore: SettingsDataStore
 ) {
@@ -297,11 +299,11 @@ private fun AppVolumeCardInSettings(
             onClick = {
                 scope.launch {
                     if (isMuted) {
-                        manager.setAppVolume(app.packageName, lastVolume)
+                        volumeManager.setAppVolume(app.packageName, lastVolume)
                         settingsDataStore.setLastAppVolume(app.packageName, lastVolume)
                     } else {
                         settingsDataStore.setLastAppVolume(app.packageName, app.volume)
-                        manager.setAppVolume(app.packageName, 0f)
+                        volumeManager.setAppVolume(app.packageName, 0f)
                     }
                 }
             }
@@ -319,7 +321,7 @@ private fun AppVolumeCardInSettings(
             Slider(
                 value = app.volume,
                 onValueChange = { newVol ->
-                    manager.setAppVolume(app.packageName, newVol)
+                    volumeManager.setAppVolume(app.packageName, newVol)
                     if (newVol > 0f) {
                         lastVolume = newVol
                         scope.launch { settingsDataStore.setLastAppVolume(app.packageName, newVol) }

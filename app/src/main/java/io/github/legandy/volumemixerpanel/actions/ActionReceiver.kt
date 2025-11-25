@@ -19,7 +19,7 @@ class ActionReceiver : BroadcastReceiver() {
         when (action) {
             ACTION_TOGGLE_SILENT -> {
                 Log.d(TAG, "Handling ACTION_TOGGLE_SILENT")
-                MyApplication.manager.setSilent()
+                MyApplication.volumeManager.setSilent()
             }
             else -> {
                 val serviceIntent = Intent(context, OverlayService::class.java).apply {

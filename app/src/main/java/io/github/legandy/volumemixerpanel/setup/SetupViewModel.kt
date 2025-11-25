@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import io.github.legandy.volumemixerpanel.core.MyApplication
+import io.github.legandy.volumemixerpanel.core.PermissionManager
 import io.github.legandy.volumemixerpanel.core.ShizukuManager
 import io.github.legandy.volumemixerpanel.overlay.OverlayService
 import io.github.legandy.volumemixerpanel.utils.isAccessibilityServiceEnabled
@@ -20,10 +21,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import android.provider.Settings
+import io.github.legandy.volumemixerpanel.core.VolumeManager
 
 class SetupViewModel(application: Application, private val savedStateHandle: SavedStateHandle, private val dataStore: DataStore<Preferences>) : AndroidViewModel(application) {
 
-    private val manager: ShizukuManager = MyApplication.manager
+    private val shizukuManager: ShizukuManager = MyApplication.shizukuManager
+    private val volumeManager: VolumeManager = MyApplication.volumeManager
+    private val permissionManager: PermissionManager = MyApplication.permissionManager
 
     // UI State
     private val _uiState = MutableStateFlow(
@@ -43,13 +47,13 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
             }
         }
         viewModelScope.launch {
-            snapshotFlow { manager.shizukuReady }.collect { isReady ->
+            snapshotFlow { shizukuManager.shizukuReady }.collect { isReady ->
                 _uiState.value = _uiState.value.copy(hasShizukuReady = isReady)
                 updateCanGoNext(_uiState.value.currentOnboardingStep)
             }
         }
         viewModelScope.launch {
-            snapshotFlow { manager.shizukuPermission }.collect { hasPermission ->
+            snapshotFlow { shizukuManager.shizukuPermission }.collect { hasPermission ->
                 _uiState.value = _uiState.value.copy(shizukuPermission = hasPermission)
                 updateCanGoNext(_uiState.value.currentOnboardingStep)
             }
@@ -61,8 +65,8 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         _uiState.value = _uiState.value.copy(
             isAccessibilityEnabled = isAccessibilityServiceEnabled(getApplication()),
             hasNotificationPolicyAccess = checkNotificationPolicyAccess(),
-            hasShizukuReady = manager.shizukuReady,
-            shizukuPermission = manager.shizukuPermission,
+            hasShizukuReady = shizukuManager.shizukuReady,
+            shizukuPermission = shizukuManager.shizukuPermission,
             hasOverlayPermission = checkOverlayPermission()
         )
         updateCanGoNext(_uiState.value.currentOnboardingStep)
@@ -118,10 +122,10 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     fun grantAllPermissionsWithShizuku() {
         viewModelScope.launch {
             try {
-                manager.grantWriteSecureSettingsPermission()
-                manager.enableAccessibilityService(ComponentName(getApplication<Application>().packageName, OverlayService::class.java.name))
-                manager.grantNotificationPolicyPermission() // Grant Notification Policy Access
-                manager.grantSystemAlertWindowPermission() // Grant Overlay Permission
+                permissionManager.grantWriteSecureSettingsPermission()
+                permissionManager.enableAccessibilityService(ComponentName(getApplication<Application>().packageName, OverlayService::class.java.name))
+                permissionManager.grantNotificationPolicyPermission() // Grant Notification Policy Access
+                permissionManager.grantSystemAlertWindowPermission() // Grant Overlay Permission
                 navigateToOnboardingStep(OnboardingStep.Complete) // Navigate to overlay permission step
             } catch (e: SecurityException) {
                 e.printStackTrace()
@@ -133,7 +137,7 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     fun onOpenNotificationPolicyAccessClick() {
         viewModelScope.launch {
             try {
-                manager.grantNotificationPolicyPermission()
+                permissionManager.grantNotificationPolicyPermission()
             } catch (e: SecurityException) {
                 e.printStackTrace()
             }

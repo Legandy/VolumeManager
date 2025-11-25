@@ -16,8 +16,6 @@ import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 import io.github.legandy.volumemixerpanel.setup.SetupViewModelFactory
 import io.github.legandy.volumemixerpanel.settings.SettingsScreen
 import io.github.legandy.volumemixerpanel.core.MyApplication
-import android.net.Uri
-import android.provider.Settings
 
 class MainActivity : ComponentActivity() {
 
@@ -61,7 +59,11 @@ class MainActivity : ComponentActivity() {
                     uiState.isAccessibilityEnabled &&
                     uiState.hasNotificationPolicyAccess &&
                     uiState.hasOverlayPermission) {
-                    SettingsScreen(settingsDataStore = MyApplication.settings, manager = MyApplication.manager)
+                    SettingsScreen(
+                        settingsDataStore = MyApplication.settings,
+                        shizukuManager = MyApplication.shizukuManager,
+                        volumeManager = MyApplication.volumeManager
+                    )
                 }
             }
         }

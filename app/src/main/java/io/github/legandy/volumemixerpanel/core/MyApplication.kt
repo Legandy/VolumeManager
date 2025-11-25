@@ -20,21 +20,29 @@ class MyApplication : Application() {
             SettingsDataStore(instance.appSettingsDataStore)
         }
 
-        val manager: ShizukuManager by lazy {
-            ShizukuManager(
+        val shizukuManager: ShizukuManager by lazy {
+            ShizukuManager(instance.applicationContext)
+        }
+
+        val volumeManager: VolumeManager by lazy {
+            VolumeManager(
                 instance.applicationContext,
+                shizukuManager,
                 instance.appVolumesDataStore
             )
         }
-
-        val setupDataStore by lazy {
-            instance.setupPreferencesDataStore
+        
+        val permissionManager: PermissionManager by lazy {
+            shizukuManager.permissionManager
         }
+
+        val setupDataStore by lazy { instance.setupPreferencesDataStore }
     }
 
     override fun onCreate() {
         super.onCreate()
         instance = this
+        shizukuManager.onShizukuReady = { volumeManager.start() }
     }
 
     override fun attachBaseContext(base: Context?) {

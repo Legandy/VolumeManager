@@ -28,7 +28,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import io.github.legandy.volumemixerpanel.core.MyApplication
-import io.github.legandy.volumemixerpanel.core.ShizukuManager
+import io.github.legandy.volumemixerpanel.core.VolumeManager
 import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +51,7 @@ class OverlayService : AccessibilityService() {
     private val audioManager: AudioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
     private val keyguardManager: KeyguardManager by lazy { getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
 
-    private val manager: ShizukuManager by lazy { MyApplication.manager }
+    private val volumeManager: VolumeManager by lazy { MyApplication.volumeManager }
     private val settingsDataStore: SettingsDataStore by lazy { MyApplication.settings }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isOverlayVisible by mutableStateOf(false)
@@ -180,7 +180,7 @@ class OverlayService : AccessibilityService() {
                 resetTimer = ::resetIdleTimer,
                 pauseTimer = ::pauseIdleTimer,
                 resumeTimer = ::resumeIdleTimer,
-                manager = manager,
+                volumeManager = volumeManager,
                 settingsDataStore = settingsDataStore
             )
         }

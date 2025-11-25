@@ -8,27 +8,28 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import io.github.legandy.volumemixerpanel.core.MyApplication
 import io.github.legandy.volumemixerpanel.core.ShizukuManager
+import io.github.legandy.volumemixerpanel.core.VolumeManager
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 
 class SettingsActivity : ComponentActivity() {
 
     private lateinit var settingsDataStore: SettingsDataStore
-    private lateinit var volumesDataStore: DataStore<Preferences>
-    private lateinit var manager: ShizukuManager
+    private val volumeManager: VolumeManager by lazy { MyApplication.volumeManager }
+    private val shizukuManager: ShizukuManager by lazy { MyApplication.shizukuManager }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         settingsDataStore = SettingsDataStore(provideSettingsDataStore(applicationContext))
-        volumesDataStore = provideVolumesDataStore(applicationContext)
-        manager = ShizukuManager(applicationContext, volumesDataStore)
 
         setContent {
             VolumeMixerPanelTheme {
                 SettingsScreen(
                     settingsDataStore = settingsDataStore,
-                    manager = manager
+                    volumeManager = volumeManager,
+                    shizukuManager = shizukuManager
                 )
             }
         }
@@ -37,12 +38,6 @@ class SettingsActivity : ComponentActivity() {
     private fun provideSettingsDataStore(context: Context): DataStore<Preferences> {
         return PreferenceDataStoreFactory.create(
             produceFile = { context.preferencesDataStoreFile("settings") }
-        )
-    }
-
-    private fun provideVolumesDataStore(context: Context): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create(
-            produceFile = { context.preferencesDataStoreFile("volumes") }
         )
     }
 }

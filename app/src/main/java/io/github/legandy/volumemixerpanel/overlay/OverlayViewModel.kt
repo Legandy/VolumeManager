@@ -12,7 +12,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.core.content.ContextCompat
 import io.github.legandy.volumemixerpanel.core.MyApplication
-import io.github.legandy.volumemixerpanel.core.ShizukuManager
+import io.github.legandy.volumemixerpanel.core.VolumeManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -29,7 +29,7 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
 
     private val audioManager = application.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val notificationManager = application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val manager: ShizukuManager = MyApplication.manager
+    private val volumeManager: VolumeManager = MyApplication.volumeManager
 
     private val _uiState = MutableStateFlow(SystemAudioUiState())
     val uiState = _uiState.asStateFlow()
@@ -115,7 +115,7 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setRingerMode(mode: Int) {
-        manager.setRingerMode(mode)
+        volumeManager.setRingerMode(mode)
     }
 
     fun setDndShizuku(enabled: Boolean) {
@@ -124,10 +124,10 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
         _uiState.value = current.copy(isDndOn = enabled)
 
         // Perform actual logic
-        manager.setDndShizuku(enabled)
+        volumeManager.setDndShizuku(enabled)
     }
 
-    
+
 
     override fun onCleared() {
         super.onCleared()

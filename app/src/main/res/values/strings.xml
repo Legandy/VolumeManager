@@ -7,8 +7,8 @@
 
         <!-- Onboarding Flow -->
         <string name="onboarding_setup_title">Volume Manager Setup</string>
-    <string name="previous_button_description">Previous onboarding step</string>
-    <string name="next_button_text">Next</string>
+        <string name="previous_button_description">Previous onboarding step</string>
+        <string name="next_button_text">Next</string>
 
 
     <!-- Welcome Screen -->

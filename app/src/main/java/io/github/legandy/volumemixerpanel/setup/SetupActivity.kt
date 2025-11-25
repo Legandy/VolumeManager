@@ -49,7 +49,7 @@ class SetupActivity : ComponentActivity() {
                         isAccessibilityEnabled = uiState.isAccessibilityEnabled,
                         hasNotificationPolicyAccess = uiState.hasNotificationPolicyAccess,
                         hasOverlayPermission = uiState.hasOverlayPermission,
-                        onGrantShizukuClick = { MyApplication.manager.requestShizukuPermission(this) },
+                        onGrantShizukuClick = { MyApplication.permissionManager.requestShizukuPermission(this) },
                         onOpenAccessibilityClick = { openAccessibilitySettings() },
                         onOpenNotificationPolicyAccessClick = {
                             setupViewModel.onOpenNotificationPolicyAccessClick()
