@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -15,6 +14,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +36,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.AlarmOff
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BluetoothAudio
 import androidx.compose.material.icons.filled.Check
@@ -67,7 +68,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -80,16 +80,16 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import io.github.legandy.volumemixerpanel.main.MainActivity
+import io.github.legandy.volumemixerpanel.R
 import io.github.legandy.volumemixerpanel.core.VolumeManager
+import io.github.legandy.volumemixerpanel.main.MainActivity
 import io.github.legandy.volumemixerpanel.settings.AppFilterMode
 import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 import kotlinx.coroutines.launch
-import io.github.legandy.volumemixerpanel.R
-import androidx.compose.ui.res.stringResource
 
 private enum class OverlayTab { SYSTEM, APPS }
 
@@ -157,7 +157,7 @@ private fun OverlayContent(
                     label = "overlay-tab-content"
                 ) { tab ->
                     when (tab) {
-                        OverlayTab.SYSTEM -> SystemVolumeSliders(overlayViewModel, pauseTimer, resumeTimer, resetTimer)
+                        OverlayTab.SYSTEM -> SystemVolumeSliders(overlayViewModel, pauseTimer, resumeTimer, resetTimer, settingsDataStore)
                         OverlayTab.APPS -> AppVolumeSliders(volumeManager, settingsDataStore, pauseTimer, resumeTimer, resetTimer)
                     }
                 }
@@ -246,7 +246,13 @@ private fun OverlayContent(
 }
 
 @Composable
-private fun SystemVolumeSliders(overlayViewModel: OverlayViewModel, pauseTimer: () -> Unit, resumeTimer: () -> Unit, resetTimer: () -> Unit) {
+private fun SystemVolumeSliders(
+    overlayViewModel: OverlayViewModel,
+    pauseTimer: () -> Unit,
+    resumeTimer: () -> Unit,
+    resetTimer: () -> Unit,
+    settingsDataStore: SettingsDataStore
+) {
     val uiState by overlayViewModel.uiState.collectAsState()
 
     Column(
@@ -255,10 +261,10 @@ private fun SystemVolumeSliders(overlayViewModel: OverlayViewModel, pauseTimer: 
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StreamSliderRow(AudioManager.STREAM_MUSIC, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer)
-        StreamSliderRow(AudioManager.STREAM_RING, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer)
-        StreamSliderRow(AudioManager.STREAM_ALARM, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer)
-        StreamSliderRow(AudioManager.STREAM_VOICE_CALL, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer)
+        StreamSliderRow(AudioManager.STREAM_MUSIC, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer, settingsDataStore)
+        StreamSliderRow(AudioManager.STREAM_RING, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer, settingsDataStore)
+        StreamSliderRow(AudioManager.STREAM_ALARM, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer, settingsDataStore)
+        StreamSliderRow(AudioManager.STREAM_VOICE_CALL, uiState, overlayViewModel, pauseTimer, resumeTimer, resetTimer, settingsDataStore)
     }
 }
 
@@ -314,26 +320,32 @@ private fun StreamSliderRow(
     overlayViewModel: OverlayViewModel,
     pauseTimer: () -> Unit,
     resumeTimer: () -> Unit,
-    resetTimer: () -> Unit
+    resetTimer: () -> Unit,
+    settingsDataStore: SettingsDataStore
 ) {
+    val context = LocalContext.current
+    val audioManager = remember { context.getSystemService(android.content.Context.AUDIO_SERVICE) as AudioManager }
+    val scope = rememberCoroutineScope()
+
     val maxVolume = uiState.maxVolumes[streamType] ?: 15
-    var currentVolume by remember(uiState.volumes[streamType]) { mutableIntStateOf(uiState.volumes[streamType] ?: 0) }
-    val interactionSource = remember { MutableInteractionSource() }
-    val isMuted = uiState.mutedStreams.contains(streamType)
+    val actualVolume = uiState.volumes[streamType] ?: 0
+
+    // Fetch the system minimum volume (usually 1 for Alarm/Call, 0 for others)
+    val minVolume = remember(streamType) {
+        try { audioManager.getStreamMinVolume(streamType) } catch (e: Exception) { 0 }
+    }
+
     val ringerMode = uiState.ringerMode
 
-    val initialLastVolume = remember(streamType) {
-        if (currentVolume > 0) currentVolume else (maxVolume * 0.7).toInt().coerceAtLeast(1)
-    }
-    var lastKnownVolume by remember(streamType) { mutableIntStateOf(initialLastVolume) }
+    // Restore "Last Volume" memory from DataStore
+    val lastSavedVolume by remember(streamType) {
+        settingsDataStore.getLastSystemVolumeFlow(streamType)
+    }.collectAsState(initial = null)
 
-    LaunchedEffect(currentVolume) {
-        if (currentVolume > 0) {
-            lastKnownVolume = currentVolume
-        }
-    }
+    // Fallback: If no last volume is saved, use 70% as safe default
+    val defaultUnmuteVolume = (maxVolume * 0.7f).toInt().coerceAtLeast(minVolume + 1)
 
-    val displayVolume = if (isMuted && streamType != AudioManager.STREAM_RING) lastKnownVolume else currentVolume
+    val interactionSource = remember { MutableInteractionSource() }
 
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collect { interaction ->
@@ -345,130 +357,166 @@ private fun StreamSliderRow(
         }
     }
 
-    var sliderEnabled: Boolean
+    // Direct check for Muted state using AudioManager (Fixes Closed/Reopened issue)
+    var isSystemMuted by remember(streamType) {
+        mutableStateOf(
+            audioManager.isStreamMute(streamType)
+        )
+    }
+
+    // Sync local state when UI State updates
+    LaunchedEffect(uiState) {
+        isSystemMuted = audioManager.isStreamMute(streamType)
+    }
+
+    val sliderEnabled: Boolean
+    val isVisuallyMutedForStream: Boolean
     val icon: ImageVector
-    val onIconClick: (() -> Unit)?
+    val onIconClick: () -> Unit
     val name: String
+
+    val isMediaMuted = streamType == AudioManager.STREAM_MUSIC && isSystemMuted
+
+    // LOGIC: Determine Slider Display Value
+    val displayValue = when {
+        streamType == AudioManager.STREAM_MUSIC -> actualVolume.toFloat()
+        actualVolume <= minVolume -> 0f
+        else -> actualVolume.toFloat()
+    }
 
     when (streamType) {
         AudioManager.STREAM_RING -> {
             name = "Ring"
+            sliderEnabled = ringerMode == AudioManager.RINGER_MODE_NORMAL
+            isVisuallyMutedForStream = ringerMode != AudioManager.RINGER_MODE_NORMAL
+
             when (ringerMode) {
                 AudioManager.RINGER_MODE_VIBRATE -> {
                     icon = Icons.Default.Vibration
-                    sliderEnabled = false
-                    onIconClick = {
-                        overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_SILENT)
-                        resetTimer()
-                    }
+                    onIconClick = { overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_SILENT) }
                 }
                 AudioManager.RINGER_MODE_SILENT -> {
                     icon = Icons.Default.NotificationsOff
-                    sliderEnabled = false
-                    onIconClick = {
-                        overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
-                        resetTimer()
-                    }
+                    onIconClick = { overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_NORMAL) }
                 }
                 else -> { // RINGER_MODE_NORMAL
                     icon = Icons.Default.RingVolume
-                    sliderEnabled = true
-                    onIconClick = {
-                        overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
-                        resetTimer()
-                    }
+                    onIconClick = { overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_VIBRATE) }
                 }
             }
         }
         AudioManager.STREAM_MUSIC -> {
             name = "Media"
+            sliderEnabled = true
+            isVisuallyMutedForStream = isMediaMuted
+
             val baseIcon = when (uiState.deviceType) {
                 AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> Icons.Default.BluetoothAudio
                 AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> Icons.Default.Headphones
                 else -> Icons.AutoMirrored.Filled.VolumeUp
             }
-            icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else baseIcon
-            sliderEnabled = true
+            icon = if (isVisuallyMutedForStream) Icons.AutoMirrored.Filled.VolumeOff else baseIcon
+
             onIconClick = {
-                val direction = if (isMuted) AudioManager.ADJUST_UNMUTE else AudioManager.ADJUST_MUTE
+                val direction = if (isMediaMuted) AudioManager.ADJUST_UNMUTE else AudioManager.ADJUST_MUTE
                 overlayViewModel.adjustStreamVolume(streamType, direction)
-                resetTimer()
+
+                isSystemMuted = !isSystemMuted
             }
         }
         AudioManager.STREAM_ALARM -> {
             name = "Alarm"
-            icon = Icons.Default.Alarm
             sliderEnabled = true
-            onIconClick = null // No action here to reset timer
+            isVisuallyMutedForStream = actualVolume <= minVolume
+            icon = if (isVisuallyMutedForStream) Icons.Filled.AlarmOff else Icons.Default.Alarm
+
+            onIconClick = {
+                if (actualVolume > minVolume) {
+                    // Muting: Set to minVolume (usually 1 for Alarm)
+                    overlayViewModel.setStreamVolume(streamType, minVolume)
+                } else {
+                    // Unmuting: Restore from DataStore if available, else default
+                    val target = lastSavedVolume?.takeIf { it > minVolume } ?: defaultUnmuteVolume
+                    overlayViewModel.setStreamVolume(streamType, target)
+                }
+            }
         }
         else -> { // Handles STREAM_VOICE_CALL
             name = "Call"
-            sliderEnabled = !isMuted
-            icon = if (isMuted) Icons.Default.PhoneDisabled else Icons.Default.Phone
+            sliderEnabled = true
+            isVisuallyMutedForStream = actualVolume <= minVolume
+            icon = if (isVisuallyMutedForStream) Icons.Default.PhoneDisabled else Icons.Default.Phone
+
             onIconClick = {
-                val direction = if (isMuted) AudioManager.ADJUST_UNMUTE else AudioManager.ADJUST_MUTE
-                overlayViewModel.adjustStreamVolume(streamType, direction)
-                resetTimer()
+                if (actualVolume > minVolume) {
+                    overlayViewModel.setStreamVolume(streamType, minVolume)
+                } else {
+                    val target = lastSavedVolume?.takeIf { it > minVolume } ?: defaultUnmuteVolume
+                    overlayViewModel.setStreamVolume(streamType, target)
+                }
             }
         }
     }
 
-    val sliderColors = if (!sliderEnabled) {
-        SliderDefaults.colors(
+    val sliderColors = when {
+        !sliderEnabled -> SliderDefaults.colors(
             thumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
             activeTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
             inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
         )
-    } else if (streamType == AudioManager.STREAM_MUSIC && isMuted) {
-        SliderDefaults.colors(
+        // This handles the "Greyed Out" look for muted streams
+        isVisuallyMutedForStream -> SliderDefaults.colors(
             thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
             activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
             inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
         )
-    } else {
-        SliderDefaults.colors()
+        else -> SliderDefaults.colors()
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth().height(56.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (onIconClick != null) {
-            IconButton(onClick = onIconClick, modifier = Modifier.padding(start = 16.dp)) {
-                Icon(imageVector = icon, contentDescription = name)
-            }
-        } else {
-            IconButton(onClick = {}, enabled = false, modifier = Modifier.padding(start = 16.dp)) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = name,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        Slider(
-            value = displayVolume.toFloat(),
-            onValueChange = { newVol -> currentVolume = newVol.toInt(); resetTimer() },
-            onValueChangeFinished = {
-                try {
-                    if (streamType == AudioManager.STREAM_RING) {
-                        if (currentVolume == 0) {
-                            overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_SILENT)
-                        } else {
-                            overlayViewModel.setStreamVolume(streamType, currentVolume)
-                            if (uiState.ringerMode != AudioManager.RINGER_MODE_NORMAL) {
-                                overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
-                            }
-                        }
-                    } else {
-                        if (sliderEnabled) {
-                            overlayViewModel.setStreamVolume(streamType, currentVolume)
-                        }
-                    }
-                } catch (e: Exception) { Log.e("VolumeManager.Service", "onValueChangeFinished failed", e) }
-                resumeTimer()
+        IconButton(
+            onClick = {
+                onIconClick()
                 resetTimer()
+            },
+            modifier = Modifier.padding(start = 16.dp)
+        ) {
+            val tint = if (!sliderEnabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+            Icon(
+                imageVector = icon,
+                contentDescription = name,
+                tint = tint
+            )
+        }
+
+        Slider(
+            value = displayValue,
+            onValueChange = { newVol ->
+                val targetVol = newVol.toInt().coerceAtLeast(minVolume)
+
+                if (streamType == AudioManager.STREAM_MUSIC && isMediaMuted) {
+                    overlayViewModel.adjustStreamVolume(streamType, AudioManager.ADJUST_UNMUTE)
+                    isSystemMuted = false
+                }
+
+                overlayViewModel.setStreamVolume(streamType, targetVol)
+                resetTimer()
+            },
+            onValueChangeFinished = {
+                resumeTimer()
+
+                // Save Logic: Save volume if dragging ended at a valid "unmuted" level
+                if (displayValue.toInt() > minVolume) {
+                    scope.launch {
+                        settingsDataStore.setLastSystemVolume(streamType, displayValue.toInt())
+                    }
+                }
             },
             interactionSource = interactionSource,
             valueRange = 0f..maxVolume.toFloat(),
@@ -476,13 +524,27 @@ private fun StreamSliderRow(
             enabled = sliderEnabled,
             colors = sliderColors
         )
-        Text(
-            text = "$displayVolume",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 16.dp).width(24.dp),
-            textAlign = TextAlign.End
-        )
+
+        Box(
+            modifier = Modifier
+                .padding(end = 16.dp)
+                .width(24.dp)
+                .clickable(
+                    enabled = sliderEnabled,
+                    onClick = {
+                        overlayViewModel.setStreamVolume(streamType, maxVolume)
+                        resetTimer()
+                    }
+                ),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Text(
+                text = "${displayValue.toInt()}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End
+            )
+        }
     }
 }
 
@@ -524,7 +586,9 @@ private fun AppSliderRow(
     val colorFilter = if (isMuted) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) else null
 
     Row(
-        modifier = Modifier.fillMaxWidth().height(56.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -547,7 +611,9 @@ private fun AppSliderRow(
             Image(
                 bitmap = app.icon,
                 contentDescription = app.label,
-                modifier = iconModifier.size(24.dp).clip(RoundedCornerShape(4.dp)),
+                modifier = iconModifier
+                    .size(24.dp)
+                    .clip(RoundedCornerShape(4.dp)),
                 colorFilter = colorFilter
             )
         }
@@ -572,7 +638,9 @@ private fun AppSliderRow(
             text = "${(app.volume * 100).toInt()}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 16.dp).width(32.dp),
+            modifier = Modifier
+                .padding(end = 16.dp)
+                .width(32.dp),
             textAlign = TextAlign.End
         )
     }

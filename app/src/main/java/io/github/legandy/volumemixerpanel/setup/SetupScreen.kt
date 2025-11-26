@@ -485,7 +485,7 @@ fun StatusCard(title: String, description: String, granted: Boolean) {
 }
 
 @Composable
-fun WaitingForShizukuScreen() { /* TODO: Implement actual waiting screen */
+fun WaitingForShizukuScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()

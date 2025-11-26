@@ -1,9 +1,11 @@
 package io.github.legandy.volumemixerpanel.settings
 
+import android.media.AudioManager
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.json.JSONObject
 
@@ -22,6 +24,11 @@ class SettingsDataStore(private val ds: DataStore<Preferences>) {
         val APP_WHITELIST = stringSetPreferencesKey("app_whitelist")
         val CLOSE_OVERLAY_ON_BACK = booleanPreferencesKey("close_overlay_on_back")
         val LAST_APP_VOLUMES = stringPreferencesKey("last_app_volumes")
+
+        // New keys for system stream memory
+        val LAST_RING_VOLUME = intPreferencesKey("last_ring_volume")
+        val LAST_ALARM_VOLUME = intPreferencesKey("last_alarm_volume")
+        val LAST_CALL_VOLUME = intPreferencesKey("last_call_volume")
     }
 
     val showOverlayOnVolumeKey: Flow<Boolean> = ds.data.map { it[Keys.SHOW_OVERLAY_ON_VOLUME] ?: true }.distinctUntilChanged()
@@ -55,6 +62,29 @@ class SettingsDataStore(private val ds: DataStore<Preferences>) {
         currentMap[packageName] = volume
         preferences[Keys.LAST_APP_VOLUMES] = serializeVolumeMap(currentMap)
     }
+
+    // --- System Volume Memory Helpers ---
+
+    suspend fun setLastSystemVolume(streamType: Int, volume: Int) {
+        val key = getVolumeKey(streamType) ?: return
+        ds.edit { it[key] = volume }
+    }
+
+    fun getLastSystemVolumeFlow(streamType: Int): Flow<Int?> {
+        val key = getVolumeKey(streamType) ?: return flowOf(null)
+        return ds.data.map { it[key] }
+    }
+
+    private fun getVolumeKey(streamType: Int): Preferences.Key<Int>? {
+        return when (streamType) {
+            AudioManager.STREAM_RING -> Keys.LAST_RING_VOLUME
+            AudioManager.STREAM_ALARM -> Keys.LAST_ALARM_VOLUME
+            AudioManager.STREAM_VOICE_CALL -> Keys.LAST_CALL_VOLUME
+            else -> null
+        }
+    }
+
+    // --- Private Helpers ---
 
     private fun parseVolumeMap(jsonString: String): Map<String, Float> {
         return try {
