@@ -38,7 +38,6 @@ import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.AlarmOff
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BluetoothAudio
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DoNotDisturbOn
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.NotificationsOff
@@ -81,6 +80,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.legandy.volumemixerpanel.R
 import io.github.legandy.volumemixerpanel.core.VolumeManager
@@ -89,6 +89,7 @@ import io.github.legandy.volumemixerpanel.settings.AppFilterMode
 import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 
 private enum class OverlayTab { SYSTEM, APPS }
 
@@ -102,7 +103,8 @@ fun OverlayScreen(
     pauseTimer: () -> Unit,
     resumeTimer: () -> Unit,
     volumeManager: VolumeManager,
-    settingsDataStore: SettingsDataStore
+    settingsDataStore: SettingsDataStore,
+    bottomPadding: Dp
 ) {
     VolumeMixerPanelTheme {
         AnimatedVisibility(
@@ -118,7 +120,8 @@ fun OverlayScreen(
                 pauseTimer = pauseTimer,
                 resumeTimer = resumeTimer,
                 volumeManager = volumeManager,
-                settingsDataStore = settingsDataStore
+                settingsDataStore = settingsDataStore,
+                bottomPadding = bottomPadding
             )
         }
     }
@@ -132,20 +135,26 @@ private fun OverlayContent(
     pauseTimer: () -> Unit,
     resumeTimer: () -> Unit,
     volumeManager: VolumeManager,
-    settingsDataStore: SettingsDataStore
+    settingsDataStore: SettingsDataStore,
+    bottomPadding: Dp // Received from Service
 ) {
     var selectedTab by remember { mutableStateOf(OverlayTab.SYSTEM) }
     val context = LocalContext.current
-
     val uiState by overlayViewModel.uiState.collectAsState()
 
+    // 1. SURFACE: Remove bottom rounded corners to flush with screen edge
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
         tonalElevation = 8.dp,
     ) {
-        Column(Modifier.padding(top = 16.dp)) {
+        // 2. PADDING: Apply the nav bar height to the BOTTOM of this column
+        Column(
+            modifier = Modifier
+                .padding(top = 16.dp)
+                .padding(bottom = bottomPadding) // <--- Content pushed up above nav bar
+        ) {
             Box(
                 modifier = Modifier
                     .height(260.dp)
@@ -162,6 +171,8 @@ private fun OverlayContent(
                 }
             }
 
+            // In OverlayScreen.kt, inside the OverlayContent function:
+
             HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
             Row(
                 modifier = Modifier
@@ -170,7 +181,7 @@ private fun OverlayContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left Group
+                // Left Group (No Change)
                 Row {
                     IconButton(onClick = {
                         val intent = Intent(context, MainActivity::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP) }
@@ -180,15 +191,16 @@ private fun OverlayContent(
                     }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
-                    // Output devices Settings Button
                     IconButton(onClick = {
                         try {
+                            // FIX: Use the raw string instead of the class constant.
+                            // This guarantees "Unresolved reference" cannot happen.
                             val intent = Intent("android.settings.panel.action.MEDIA_OUTPUT")
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
                             context.startActivity(intent)
                             resetTimer()
-                        } catch (_: Exception) {
+                        } catch (e: Exception) {
                             // Fallback to standard Bluetooth settings
                             try {
                                 val btIntent = Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
@@ -197,7 +209,7 @@ private fun OverlayContent(
                                 context.startActivity(btIntent)
                                 hideView()
                                 resetTimer()
-                            } catch (_: Exception) {
+                            } catch (e2: Exception) {
                                 Toast.makeText(context, R.string.output_switcher_not_available, Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -206,7 +218,7 @@ private fun OverlayContent(
                     }
                 }
 
-                // Center Group
+                // Center Group (No Change)
                 Row {
                     val isSystemSelected = selectedTab == OverlayTab.SYSTEM
                     if (isSystemSelected) {
@@ -233,7 +245,7 @@ private fun OverlayContent(
                     }
                 }
 
-                // Right Group
+                // Right Group (DND + Dismiss Arrow)
                 Row {
                     IconButton(onClick = {
                         //overlayViewModel.setDndAPI(!uiState.isDndOn)
@@ -246,8 +258,9 @@ private fun OverlayContent(
                             tint = if(uiState.isDndOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    // Replaced Icons.Default.Check with Icons.Default.KeyboardArrowDown
                     IconButton(onClick = { hideView(); resetTimer() }) {
-                        Icon(Icons.Default.Check, contentDescription = "Done")
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Hide Panel")
                     }
                 }
             }
@@ -512,7 +525,9 @@ private fun StreamSliderRow(
 
                 if (streamType == AudioManager.STREAM_MUSIC && isMediaMuted) {
                     overlayViewModel.adjustStreamVolume(streamType, AudioManager.ADJUST_UNMUTE)
-                    isSystemMuted = false //needed for media Mute button
+                    if (isSystemMuted) {
+                        isSystemMuted = false //needed for media Mute button
+                    }
                 }
 
                 overlayViewModel.setStreamVolume(streamType, targetVol)

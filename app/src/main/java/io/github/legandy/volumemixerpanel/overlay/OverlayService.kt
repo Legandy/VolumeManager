@@ -34,17 +34,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import io.github.legandy.volumemixerpanel.actions.ACTION_SHOW_OVERLAY
 import io.github.legandy.volumemixerpanel.actions.ACTION_HIDE_OVERLAY
 import io.github.legandy.volumemixerpanel.actions.ACTION_TOGGLE_OVERLAY
+import android.view.WindowInsets
+import androidx.compose.ui.unit.dp
 
 class OverlayService : AccessibilityService() {
     companion object {
         private const val TAG = "VolumeMixerPanel.Service"
-        // Removed redundant action definitions here
     }
 
     private val windowManager: WindowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -64,6 +64,7 @@ class OverlayService : AccessibilityService() {
     private var cachedCloseOnBack = true
 
     private var serviceLifecycleOwner: ServiceLifecycleOwner? = null
+    private var navBarHeight by mutableStateOf(0.dp) // State to hold nav height
 
     override fun onCreate() {
         super.onCreate()
@@ -161,6 +162,16 @@ class OverlayService : AccessibilityService() {
         setViewTreeViewModelStoreOwner(serviceLifecycleOwner)
         serviceLifecycleOwner?.resume()
 
+        // 1. LISTENER: Calculate the actual height of the navigation bar/pill
+        setOnApplyWindowInsetsListener { view, insets ->
+            val navInsets = insets.getInsets(WindowInsets.Type.navigationBars())
+            val density = view.resources.displayMetrics.density
+            navBarHeight = (navInsets.bottom / density).dp // Convert px to dp
+
+            // Return CONSUMED so the view knows we handled it
+            WindowInsets.CONSUMED
+        }
+
         setOnTouchListener { _, event ->
             if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) {
                 hideView()
@@ -181,7 +192,8 @@ class OverlayService : AccessibilityService() {
                 pauseTimer = ::pauseIdleTimer,
                 resumeTimer = ::resumeIdleTimer,
                 volumeManager = volumeManager,
-                settingsDataStore = settingsDataStore
+                settingsDataStore = settingsDataStore,
+                bottomPadding = navBarHeight
             )
         }
     }
@@ -189,22 +201,15 @@ class OverlayService : AccessibilityService() {
     private fun createLayoutParams() = WindowManager.LayoutParams(
         WindowManager.LayoutParams.MATCH_PARENT,
         WindowManager.LayoutParams.WRAP_CONTENT,
-        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
         PixelFormat.TRANSLUCENT
     ).apply {
         gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
         y = 0
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        view?.let { windowManager.removeView(it) }
-        serviceScope.cancel()
-        serviceLifecycleOwner?.destroy()
-        serviceLifecycleOwner = null
     }
 
 
