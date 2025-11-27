@@ -1,6 +1,5 @@
 package io.github.legandy.volumemixerpanel.overlay
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -181,15 +180,26 @@ private fun OverlayContent(
                     }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
+                    // Output devices Settings Button
                     IconButton(onClick = {
                         try {
-                            val intent = Intent("android.media.action.SHOW_AUDIO_OUTPUT_SWITCHER")
+                            val intent = Intent("android.settings.panel.action.MEDIA_OUTPUT")
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
                             context.startActivity(intent)
-                            hideView()
                             resetTimer()
-                        } catch (e: ActivityNotFoundException) {
-                            Toast.makeText(context, R.string.output_switcher_not_available, Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            // Fallback to standard Bluetooth settings
+                            try {
+                                val btIntent = Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
+                                btIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+                                context.startActivity(btIntent)
+                                hideView()
+                                resetTimer()
+                            } catch (e2: Exception) {
+                                Toast.makeText(context, R.string.output_switcher_not_available, Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }) {
                         Icon(Icons.Default.SpeakerGroup, contentDescription = "Media Output")
