@@ -188,7 +188,7 @@ private fun OverlayContent(
 
                             context.startActivity(intent)
                             resetTimer()
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             // Fallback to standard Bluetooth settings
                             try {
                                 val btIntent = Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
@@ -197,7 +197,7 @@ private fun OverlayContent(
                                 context.startActivity(btIntent)
                                 hideView()
                                 resetTimer()
-                            } catch (e2: Exception) {
+                            } catch (_: Exception) {
                                 Toast.makeText(context, R.string.output_switcher_not_available, Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -342,7 +342,7 @@ private fun StreamSliderRow(
 
     // Fetch the system minimum volume (usually 1 for Alarm/Call, 0 for others)
     val minVolume = remember(streamType) {
-        try { audioManager.getStreamMinVolume(streamType) } catch (e: Exception) { 0 }
+        try { audioManager.getStreamMinVolume(streamType) } catch (_: Exception) { 0 }
     }
 
     val ringerMode = uiState.ringerMode
@@ -512,7 +512,7 @@ private fun StreamSliderRow(
 
                 if (streamType == AudioManager.STREAM_MUSIC && isMediaMuted) {
                     overlayViewModel.adjustStreamVolume(streamType, AudioManager.ADJUST_UNMUTE)
-                    isSystemMuted = false
+                    isSystemMuted = false //needed for media Mute button
                 }
 
                 overlayViewModel.setStreamVolume(streamType, targetVol)
