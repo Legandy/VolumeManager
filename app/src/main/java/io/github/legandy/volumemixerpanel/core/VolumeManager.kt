@@ -91,6 +91,17 @@ class VolumeManager(
         scope.cancel()
     }
 
+    fun getRingerModeInternal(): Int {
+        return try {
+            val result = shizukuManager.shizukuAudioManager?.call("getRingerModeInternal")?.get<Int>()
+            Log.d(TAG, "getRingerModeInternal returned: $result")
+            result ?: audioManager.ringerMode
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get ringer mode via Shizuku, falling back to public API", e)
+            audioManager.ringerMode
+        }
+    }
+
     fun setRingerMode(mode: Int) {
         try {
             shizukuManager.shizukuAudioManager?.call("setRingerModeInternal", mode, context.packageName)

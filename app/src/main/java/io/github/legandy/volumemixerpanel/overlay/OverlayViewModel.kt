@@ -51,7 +51,8 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
         refreshState()
     }
 
-    private fun refreshState() {
+    // Change from: private fun refreshState()
+    internal fun refreshState() {
         val volumes = mutableMapOf<Int, Int>()
         val maxVolumes = mutableMapOf<Int, Int>()
         val mutedStreams = mutableSetOf<Int>()
@@ -65,19 +66,19 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
             }
         }
 
-        // Calculate DND state into a local variable
         val isDndActive = notificationManager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL
 
-        // Log the confirmed system state
-        Log.d("OverlayViewModel", "refreshState: DND is ${if (isDndActive) "ON" else "OFF"}")
+        // NEW: Get the INTERNAL ringer mode via Shizuku (bypasses DND masking)
+        val actualRingerMode = volumeManager.getRingerModeInternal()
 
-        // Update the UI state using the variable
+        Log.d("OverlayViewModel", "refreshState: DND=${if (isDndActive) "ON" else "OFF"}, InternalRingerMode=$actualRingerMode")
+
         _uiState.value = SystemAudioUiState(
             volumes = volumes,
             maxVolumes = maxVolumes,
             mutedStreams = mutedStreams,
-            ringerMode = audioManager.ringerMode,
-            isDndOn = isDndActive, // Use the local variable here
+            ringerMode = actualRingerMode, // Use internal mode, not public API
+            isDndOn = isDndActive,
             deviceType = getMediaOutputDeviceType()
         )
     }
@@ -116,6 +117,8 @@ class OverlayViewModel(application: Application) : AndroidViewModel(application)
 
     fun setRingerMode(mode: Int) {
         volumeManager.setRingerMode(mode)
+        // Refresh immediately to read back the internal mode
+        refreshState()
     }
 
     fun setDndShizuku(enabled: Boolean) {

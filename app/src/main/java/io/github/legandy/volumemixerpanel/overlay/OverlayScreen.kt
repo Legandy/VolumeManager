@@ -3,6 +3,7 @@ package io.github.legandy.volumemixerpanel.overlay
 import android.content.Intent
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -410,24 +411,33 @@ private fun StreamSliderRow(
     when (streamType) {
         AudioManager.STREAM_RING -> {
             name = "Ring"
-            sliderEnabled = ringerMode == AudioManager.RINGER_MODE_NORMAL
-            isVisuallyMutedForStream = ringerMode != AudioManager.RINGER_MODE_NORMAL
 
-            when (ringerMode) {
-                AudioManager.RINGER_MODE_VIBRATE -> {
-                    icon = Icons.Default.Vibration
-                    onIconClick = { overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_SILENT) }
+            // Slider disabled when DND is on OR not in normal mode
+            sliderEnabled = !uiState.isDndOn && ringerMode == AudioManager.RINGER_MODE_NORMAL
+
+            // Visually muted when slider is disabled
+            isVisuallyMutedForStream = !sliderEnabled
+
+            // Icon shows ACTUAL internal ringer mode (read via Shizuku)
+            icon = when (ringerMode) {
+                AudioManager.RINGER_MODE_VIBRATE -> Icons.Default.Vibration
+                AudioManager.RINGER_MODE_SILENT -> Icons.Default.NotificationsOff
+                else -> Icons.Default.RingVolume
+            }
+
+            // Cycle through modes
+            onIconClick = {
+                val nextMode = when (ringerMode) {
+                    AudioManager.RINGER_MODE_NORMAL -> AudioManager.RINGER_MODE_VIBRATE
+                    AudioManager.RINGER_MODE_VIBRATE -> AudioManager.RINGER_MODE_SILENT
+                    else -> AudioManager.RINGER_MODE_NORMAL
                 }
-                AudioManager.RINGER_MODE_SILENT -> {
-                    icon = Icons.Default.NotificationsOff
-                    onIconClick = { overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_NORMAL) }
-                }
-                else -> { // RINGER_MODE_NORMAL
-                    icon = Icons.Default.RingVolume
-                    onIconClick = { overlayViewModel.setRingerMode(AudioManager.RINGER_MODE_VIBRATE) }
-                }
+                overlayViewModel.setRingerMode(nextMode)
+                resetTimer()
             }
         }
+
+
         AudioManager.STREAM_MUSIC -> {
             name = "Media"
             sliderEnabled = true
@@ -481,6 +491,13 @@ private fun StreamSliderRow(
         }
     }
 
+    // Debug logging for Ring stream
+    if (streamType == AudioManager.STREAM_RING) {
+        LaunchedEffect(uiState.ringerMode, uiState.isDndOn) {
+            Log.d("StreamSliderRow", "Ring: mode=${uiState.ringerMode}, DND=${uiState.isDndOn}, sliderEnabled=$sliderEnabled, icon=$icon")
+        }
+    }
+
     val sliderColors = when {
         !sliderEnabled -> SliderDefaults.colors(
             thumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
@@ -510,7 +527,13 @@ private fun StreamSliderRow(
             },
             modifier = Modifier.padding(start = 16.dp)
         ) {
-            val tint = if (!sliderEnabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+            // FIXED: Ring icon should always appear active (independently controllable from DND)
+            val isRingStream = streamType == AudioManager.STREAM_RING
+            val tint = if (!sliderEnabled && !isRingStream) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
             Icon(
                 imageVector = icon,
                 contentDescription = name,
