@@ -60,7 +60,6 @@ fun VolumeMixerPanelTheme(
     themeMode: ThemeMode? = null,
     content: @Composable () -> Unit
 ) {
-    // Use the global singleton settings, not the instance property
     val settingsThemeMode by MyApplication.settings.themeMode.collectAsState(
         initial = ThemeMode.SYSTEM
     )

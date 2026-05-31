@@ -3,10 +3,17 @@ package io.github.legandy.volumemixerpanel.core
 import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.database.ContentObserver
 import android.media.AudioManager
 import android.media.AudioPlaybackConfiguration
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -24,6 +31,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,8 +47,8 @@ class VolumeManager(
     companion object {
         private const val TAG = "VolumeMixerPanel.VolumeManager"
 
-        // Defined methods
         private var getClientPidMethod: Method? = null
+        private var getClientPackageNameMethod: Method? = null
         private var getPlayerProxyMethod: Method? = null
         private var playerProxySetVolumeMethod: Method? = null
         private var getPlayerInterfaceIdMethod: Method? = null
@@ -48,6 +57,11 @@ class VolumeManager(
             try {
                 val audioPlaybackCls = AudioPlaybackConfiguration::class.java
                 getClientPidMethod = audioPlaybackCls.getDeclaredMethod("getClientPid")
+                try {
+                    getClientPackageNameMethod = audioPlaybackCls.getDeclaredMethod("getClientPackageName")
+                } catch (_: NoSuchMethodException) {
+                    Log.d(TAG, "getClientPackageName not available on this Android version")
+                }
                 getPlayerProxyMethod = audioPlaybackCls.getDeclaredMethod("getPlayerProxy")
                 getPlayerInterfaceIdMethod = audioPlaybackCls.getDeclaredMethod("getPlayerInterfaceId")
                 playerProxySetVolumeMethod = Class.forName("android.media.PlayerProxy").getDeclaredMethod("setVolume", Float::class.javaPrimitiveType)
@@ -60,8 +74,39 @@ class VolumeManager(
     private val pm: PackageManager = context.packageManager
     private var audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var isStarted = false
 
     val apps = mutableStateMapOf<String, AppState>()
+
+    // --- Reactive System Flows ---
+    private val _ringerMode = MutableStateFlow(AudioManager.RINGER_MODE_NORMAL)
+    val ringerMode = _ringerMode.asStateFlow()
+
+    private val _isDndOn = MutableStateFlow(false)
+    val isDndOn = _isDndOn.asStateFlow()
+
+    private val _volumes = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val volumes = _volumes.asStateFlow()
+
+    // --- Observers ---
+    private val volumeObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            updateVolumes()
+        }
+    }
+
+    private val audioReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                AudioManager.RINGER_MODE_CHANGED_ACTION -> {
+                    _ringerMode.value = getRingerModeInternal()
+                }
+                NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED -> {
+                    _isDndOn.value = getCurrentDndMode() != 0
+                }
+            }
+        }
+    }
 
     private val playbackCallback = object : AudioManager.AudioPlaybackCallback() {
         override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>?) {
@@ -72,12 +117,52 @@ class VolumeManager(
     }
 
     fun start() {
-        audioManager.registerAudioPlaybackCallback(playbackCallback, null)
+        if (isStarted) {
+            Log.d(TAG, "VolumeManager already started, skipping.")
+            return
+        }
+        isStarted = true
+        Log.i(TAG, "Starting VolumeManager services...")
+
+        // Initial state seeding
+        _ringerMode.value = getRingerModeInternal()
+        _isDndOn.value = getCurrentDndMode() != 0
+        updateVolumes()
+
+        // Register ContentObserver
+        try {
+            context.contentResolver.registerContentObserver(
+                Settings.System.CONTENT_URI,
+                true,
+                volumeObserver
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register ContentObserver", e)
+        }
+
+        // Register Receiver for Ringer/DND
+        val filter = IntentFilter().apply {
+            addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
+            addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
+        }
+        try {
+            context.registerReceiver(audioReceiver, filter)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register audioReceiver", e)
+        }
+
+        try {
+            audioManager.registerAudioPlaybackCallback(playbackCallback, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register playbackCallback", e)
+        }
+
         scope.launch {
             loadPersistedVolumes()
             try {
                 val initialConfigs = audioManager.activePlaybackConfigurations
                 if (initialConfigs.isNotEmpty()) {
+                    Log.d(TAG, "Processing ${initialConfigs.size} initial playback configs")
                     handlePlaybackConfigs(initialConfigs)
                 }
             } catch (e: Exception) {
@@ -87,17 +172,34 @@ class VolumeManager(
     }
 
     fun destroy() {
-        audioManager.unregisterAudioPlaybackCallback(playbackCallback)
+        Log.i(TAG, "Destroying VolumeManager...")
+        isStarted = false
+        try {
+            context.contentResolver.unregisterContentObserver(volumeObserver)
+            context.unregisterReceiver(audioReceiver)
+        } catch (_: Exception) {}
+        try {
+            audioManager.unregisterAudioPlaybackCallback(playbackCallback)
+        } catch (_: Exception) {}
         scope.cancel()
+    }
+
+    private fun updateVolumes() {
+        val streams = listOf(
+            AudioManager.STREAM_MUSIC,
+            AudioManager.STREAM_RING,
+            AudioManager.STREAM_ALARM,
+            AudioManager.STREAM_VOICE_CALL
+        )
+        val currentVolumes = streams.associateWith { audioManager.getStreamVolume(it) }
+        _volumes.value = currentVolumes
     }
 
     fun getRingerModeInternal(): Int {
         return try {
             val result = shizukuManager.shizukuAudioManager?.call("getRingerModeInternal")?.get<Int>()
-            Log.d(TAG, "getRingerModeInternal returned: $result")
             result ?: audioManager.ringerMode
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get ringer mode via Shizuku, falling back to public API", e)
+        } catch (_: Exception) {
             audioManager.ringerMode
         }
     }
@@ -105,69 +207,32 @@ class VolumeManager(
     fun setRingerMode(mode: Int) {
         try {
             shizukuManager.shizukuAudioManager?.call("setRingerModeInternal", mode, context.packageName)
-            Log.d(TAG, "Set ringer mode to $mode using internal API")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to set ringer mode via Shizuku, falling back to public API", e)
-            try {
-                audioManager.ringerMode = mode
-            } catch (fe: Exception) {
-                Log.e(TAG, "Public API fallback also failed", fe)
-            }
+        } catch (_: Exception) {
+            try { audioManager.ringerMode = mode } catch (_: Exception) {}
         }
     }
 
     fun setSilent() = setRingerMode(AudioManager.RINGER_MODE_SILENT)
 
-
     fun getCurrentDndMode(): Int {
         return try {
             Settings.Global.getInt(context.contentResolver, "zen_mode", 0)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get current DND mode.", e)
-            0 // Assume DND is off on failure
-        }
+        } catch (_: Exception) { 0 }
     }
 
     fun setDndShizuku(enable: Boolean) {
         val mode = if (enable) "priority" else "all"
         val command = "cmd notification set_dnd $mode"
-
-        val exitCode = shizukuManager.executeShizukuCommand(command)
-
-        if (exitCode == 0) {
-            Log.d(TAG, "Successfully set DND via Shizuku cmd.")
-        } else {
-            Log.e(TAG, "Shizuku command failed with exit code: $exitCode. Falling back to API.")
-            setDndAPI() // Fallback
-        }
+        shizukuManager.executeShizukuCommand(command)
     }
 
-    private fun setDndAPI() {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (!notificationManager.isNotificationPolicyAccessGranted) {
-            Log.w(TAG, "Cannot toggle DND via fallback: Notification Policy Access not granted.")
+    // --- App Volume Logic ---
+    private fun handlePlaybackConfigs(configs: List<AudioPlaybackConfiguration>) {
+        if (!shizukuManager.shizukuReady) {
+            Log.v(TAG, "handlePlaybackConfigs: Shizuku not ready, skipping.")
             return
         }
 
-        try {
-            val currentFilter = notificationManager.currentInterruptionFilter
-
-            val newFilter = if (currentFilter == NotificationManager.INTERRUPTION_FILTER_ALL) {
-                NotificationManager.INTERRUPTION_FILTER_PRIORITY // Turn ON DND
-            } else {
-                NotificationManager.INTERRUPTION_FILTER_ALL // Turn OFF DND
-            }
-            notificationManager.setInterruptionFilter(newFilter)
-
-            Log.d(TAG, "Toggled DND via API. Old: $currentFilter, New Target: $newFilter")
-            Log.d(TAG, "Immediate system state check: ${getCurrentDndMode()}")
-
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Failed to toggle DND via fallback due to SecurityException.", e)
-        }
-    }
-
-    private fun handlePlaybackConfigs(configs: List<AudioPlaybackConfiguration>) {
         scope.launch {
             val runningProcesses = withContext(Dispatchers.Default) {
                 try {
@@ -177,31 +242,37 @@ class VolumeManager(
                     null
                 }
             }
-            if (runningProcesses.isNullOrEmpty()) return@launch
 
             val activeProxies = mutableMapOf<String, MutableList<Pair<Any, AudioPlaybackConfiguration>>>()
-            withContext(Dispatchers.Default) {
-                configs.forEach { cfg ->
+            configs.forEach { cfg ->
+                var pkgName: String? = try { getClientPackageNameMethod?.invoke(cfg) as? String } catch (_: Throwable) { null }
+                
+                if (pkgName == null) {
                     val pid = try { getClientPidMethod?.invoke(cfg) as? Int } catch (_: Throwable) { null }
-                    val pkgName = runningProcesses.find { it.pid == pid }?.processName?.split(":")?.firstOrNull()
+                    pkgName = runningProcesses?.find { it.pid == pid }?.processName?.split(":")?.firstOrNull()
+                }
 
-                    if (pid != null && pkgName != null) {
-                        try {
-                            val playerProxy = getPlayerProxyMethod?.invoke(cfg)
-                            if (playerProxy != null) {
-                                activeProxies.getOrPut(pkgName) { mutableListOf() }.add(playerProxy to cfg)
-                            }
-                        } catch (t: Throwable) {
-                            Log.w(TAG, "Failed to get PlayerProxy", t)
+                if (pkgName != null) {
+                    try {
+                        val playerProxy = getPlayerProxyMethod?.invoke(cfg)
+                        if (playerProxy != null) {
+                            activeProxies.getOrPut(pkgName) { mutableListOf() }.add(playerProxy to cfg)
                         }
+                    } catch (e: Throwable) {
+                        Log.e(TAG, "Failed to get player proxy for $pkgName", e)
                     }
                 }
+            }
+
+            if (activeProxies.isEmpty() && configs.isNotEmpty()) {
+                Log.d(TAG, "No package names found for ${configs.size} configs")
             }
 
             withContext(Dispatchers.Main) {
                 apps.keys.retainAll(activeProxies.keys)
                 activeProxies.forEach { (pkgName, playerConfigPairs) ->
                     val appState = apps.getOrPut(pkgName) {
+                        Log.d(TAG, "New app detected: $pkgName")
                         try {
                             val appInfo = pm.getApplicationInfo(pkgName, 0)
                             AppState(
@@ -210,11 +281,11 @@ class VolumeManager(
                                 icon = appInfo.loadIcon(pm).toBitmap().asImageBitmap(),
                                 initialVolume = volumesDataStore.data.first()[floatPreferencesKey("vol_$pkgName")] ?: 1f
                             )
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             AppState(pkgName, pkgName, ImageBitmap(1, 1), initialVolume = 1f)
                         }
                     }
-
+                    
                     val newPlayerList = mutableListOf<PlayerEntry>()
                     playerConfigPairs.forEach { (proxy, cfg) ->
                         val currentId = try { getPlayerInterfaceIdMethod?.invoke(cfg) as? Int } catch (_: Exception) { -1 }
@@ -228,10 +299,7 @@ class VolumeManager(
                         } else {
                             try {
                                 playerProxySetVolumeMethod?.invoke(proxy, appState.volume)
-                                Log.d(TAG, "Applied volume ${appState.volume} to NEW player (ID: $currentId) for $pkgName")
-                            } catch (t: Throwable) {
-                                Log.e(TAG, "Failed to set volume for new player", t)
-                            }
+                            } catch (_: Throwable) {}
                             newPlayerList.add(PlayerEntry(cfg, proxy))
                         }
                     }
@@ -249,9 +317,7 @@ class VolumeManager(
         app.players.forEach { entry ->
             try {
                 playerProxySetVolumeMethod?.invoke(entry.proxy, v)
-            } catch (t: Throwable) {
-                Log.w(TAG, "PlayerProxy.setVolume failed for $packageName", t)
-            }
+            } catch (_: Throwable) {}
         }
         scope.launch {
             volumesDataStore.edit { prefs -> prefs[floatPreferencesKey("vol_$packageName")] = v }
@@ -279,10 +345,7 @@ class VolumeManager(
         }
     }
 
-    data class PlayerEntry(
-        val config: AudioPlaybackConfiguration,
-        val proxy: Any?
-    )
+    data class PlayerEntry(val config: AudioPlaybackConfiguration, val proxy: Any?)
 
     data class AppState(
         val packageName: String,

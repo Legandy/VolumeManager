@@ -1,16 +1,33 @@
+# IDE Settings
+.idea/
 *.iml
-.gradle
-/local.properties
+
+# Gradle / Build
+.gradle/
+build/
+app/build/
+captures/
+
+# Local Configuration (Sensitive/User-Specific)
+local.properties
+keystore.properties
+*.jks
+*.keystore
+*.p12
+
+# Kotlin / JVM
+.kotlin/
 .DS_Store
-/build
-/captures
+
+# Native Build
 .externalNativeBuild
 .cxx
-local.properties
-keystore.jks
-/.idea/
-/Overview.md
+
+# Build Outputs
+*.apk
+*.aab
+
+# Project Specific (Local notes/prompts)
+/app/src/main/java/io/github/legandy/enigmabridge/EnigmaBridgeOverview.txt
+/AGENTS.md
 /ToDo.md
-/.kotlin/
-/.continue/
-/Rules.md

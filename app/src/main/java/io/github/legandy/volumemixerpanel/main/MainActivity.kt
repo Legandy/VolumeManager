@@ -34,7 +34,9 @@ class MainActivity : ComponentActivity() {
             VolumeMixerPanelTheme {
                 val uiState by setupViewModel.uiState.collectAsState()
 
-                LaunchedEffect(uiState.isOnboardingCompleted, uiState.hasShizukuReady, uiState.shizukuPermission, uiState.isAccessibilityEnabled, uiState.hasNotificationPolicyAccess, uiState.hasOverlayPermission) {
+                LaunchedEffect(uiState.isLoaded, uiState.isOnboardingCompleted, uiState.hasShizukuReady, uiState.shizukuPermission, uiState.isAccessibilityEnabled, uiState.hasNotificationPolicyAccess, uiState.hasOverlayPermission) {
+                    if (!uiState.isLoaded) return@LaunchedEffect
+
                     val allPermissionsGranted = uiState.hasShizukuReady &&
                             uiState.shizukuPermission &&
                             uiState.isAccessibilityEnabled &&
@@ -53,7 +55,8 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // Only show SettingsScreen if onboarding is completed AND all permissions are granted
-                if (uiState.isOnboardingCompleted &&
+                if (uiState.isLoaded &&
+                    uiState.isOnboardingCompleted &&
                     uiState.hasShizukuReady &&
                     uiState.shizukuPermission &&
                     uiState.isAccessibilityEnabled &&

@@ -46,11 +46,13 @@ class ShizukuManager(
             Shizuku.OnBinderDeadListener,
             Shizuku.OnRequestPermissionResultListener {
             override fun onBinderReceived() {
+                Log.i(TAG, "Shizuku binder received")
                 shizukuReady = true
                 shizukuPermission = (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED)
                 if (shizukuPermission) start()
             }
             override fun onBinderDead() {
+                Log.w(TAG, "Shizuku binder dead")
                 shizukuReady = false; shizukuPermission = false
                 shizukuActivityManager = null
                 shizukuAudioManager = null

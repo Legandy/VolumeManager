@@ -43,7 +43,10 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
             // Continuously collect isOnboardingCompleted from DataStore
             dataStore.data.collect { preferences ->
                 val isOnboardingCompletedFromDataStore = preferences[IS_ONBOARDING_COMPLETED_DATASTORE_KEY] ?: false
-                _uiState.value = _uiState.value.copy(isOnboardingCompleted = isOnboardingCompletedFromDataStore)
+                _uiState.value = _uiState.value.copy(
+                    isOnboardingCompleted = isOnboardingCompletedFromDataStore,
+                    isLoaded = true
+                )
             }
         }
         viewModelScope.launch {
@@ -161,6 +164,7 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         val hasNotificationPolicyAccess: Boolean = false,
         val hasOverlayPermission: Boolean = false, // New field
         val isOnboardingCompleted: Boolean = false,
+        val isLoaded: Boolean = false,
         val currentOnboardingStep: OnboardingStep = OnboardingStep.Welcome,
         val canGoNext: Boolean = true // Default to true for Welcome screen
     )

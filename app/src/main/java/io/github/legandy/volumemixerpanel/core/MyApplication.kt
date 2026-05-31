@@ -43,6 +43,11 @@ class MyApplication : Application() {
         super.onCreate()
         instance = this
         shizukuManager.onShizukuReady = { volumeManager.start() }
+        
+        // If Shizuku is already ready (sticky listener triggered during lazy init), start manually
+        if (shizukuManager.shizukuReady && shizukuManager.shizukuPermission) {
+            volumeManager.start()
+        }
     }
 
     override fun attachBaseContext(base: Context?) {

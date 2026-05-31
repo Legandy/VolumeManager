@@ -12,7 +12,7 @@ fun isAccessibilityServiceEnabled(context: Context): Boolean {
     val tag = "VolumeMixerPanel.Utils"
     val myServiceComponent = ComponentName(context, OverlayService::class.java)
 
-    // Method 1: Check via AccessibilityManager (most reliable)
+    // Check via AccessibilityManager
     try {
         val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
         if (am != null) {
@@ -32,7 +32,7 @@ fun isAccessibilityServiceEnabled(context: Context): Boolean {
         Log.w(tag, "Failed to check via AccessibilityManager", e)
     }
 
-    // Method 2: Check via Settings.Secure (fallback - improving robustness)
+    // Check via Settings.Secure (fallback)
     try {
         val enabledServicesString = Settings.Secure.getString(
             context.contentResolver,
