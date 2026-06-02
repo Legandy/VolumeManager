@@ -8,15 +8,17 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import dagger.hilt.android.qualifiers.ApplicationContext
 import org.joor.Reflect
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @SuppressLint("PrivateApi")
-class ShizukuManager(
-    private val context: Context
-) {
+@Singleton
+class ShizukuManager @Inject constructor() {
     companion object {
         private const val TAG = "VolumeMixerPanel.ShizukuManager"
         private const val SHIZUKU_REQ_CODE = 42
@@ -38,8 +40,6 @@ class ShizukuManager(
     var shizukuPermission by mutableStateOf(false); private set
 
     var onShizukuReady: (() -> Unit)? = null
-
-    val permissionManager: PermissionManager = PermissionManager(context) { shizukuNotificationManager }
 
     init {
         val listener = object : Shizuku.OnBinderReceivedListener,
@@ -69,6 +69,16 @@ class ShizukuManager(
         Shizuku.addBinderReceivedListenerSticky(listener)
         Shizuku.addBinderDeadListener(listener)
         Shizuku.addRequestPermissionResultListener(listener)
+    }
+
+    fun refreshState() {
+        shizukuReady = Shizuku.pingBinder()
+        if (shizukuReady) {
+            shizukuPermission = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+            if (shizukuPermission) start()
+        } else {
+            shizukuPermission = false
+        }
     }
 
     fun start() {

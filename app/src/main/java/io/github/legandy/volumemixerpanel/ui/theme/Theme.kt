@@ -10,7 +10,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import io.github.legandy.volumemixerpanel.core.MyApplication
 import io.github.legandy.volumemixerpanel.settings.ThemeMode
 
 val VolumeMixerPanelTypography = Typography(
@@ -57,15 +56,10 @@ private fun getColorScheme(themeMode: ThemeMode): ColorScheme {
 
 @Composable
 fun VolumeMixerPanelTheme(
-    themeMode: ThemeMode? = null,
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     content: @Composable () -> Unit
 ) {
-    val settingsThemeMode by MyApplication.settings.themeMode.collectAsState(
-        initial = ThemeMode.SYSTEM
-    )
-
-    val effectiveThemeMode = themeMode ?: settingsThemeMode
-    val colorScheme = getColorScheme(effectiveThemeMode)
+    val colorScheme = getColorScheme(themeMode)
 
     MaterialTheme(
         colorScheme = colorScheme,

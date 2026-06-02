@@ -2,32 +2,38 @@ package io.github.legandy.volumemixerpanel.setup
 
 import android.content.ComponentName
 import android.content.Context
-import androidx.lifecycle.AndroidViewModel
+import android.provider.Settings
+import androidx.compose.runtime.snapshotFlow
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.legandy.volumemixerpanel.core.MyApplication
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.legandy.volumemixerpanel.core.PermissionManager
 import io.github.legandy.volumemixerpanel.core.ShizukuManager
+import io.github.legandy.volumemixerpanel.core.VolumeManager
+import io.github.legandy.volumemixerpanel.di.SetupPreferencesDataStore
 import io.github.legandy.volumemixerpanel.overlay.OverlayService
 import io.github.legandy.volumemixerpanel.utils.isAccessibilityServiceEnabled
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
-import android.app.Application
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import android.provider.Settings
-import io.github.legandy.volumemixerpanel.core.VolumeManager
+import javax.inject.Inject
 
-class SetupViewModel(application: Application, private val savedStateHandle: SavedStateHandle, private val dataStore: DataStore<Preferences>) : AndroidViewModel(application) {
-
-    private val shizukuManager: ShizukuManager = MyApplication.shizukuManager
-    private val volumeManager: VolumeManager = MyApplication.volumeManager
-    private val permissionManager: PermissionManager = MyApplication.permissionManager
+@HiltViewModel
+class SetupViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val savedStateHandle: SavedStateHandle,
+    @SetupPreferencesDataStore private val dataStore: DataStore<Preferences>,
+    private val shizukuManager: ShizukuManager,
+    private val volumeManager: VolumeManager,
+    private val permissionManager: PermissionManager
+) : ViewModel() {
 
     // UI State
     private val _uiState = MutableStateFlow(
@@ -65,8 +71,9 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     }
 
     fun onActivityResume() {
+        shizukuManager.refreshState()
         _uiState.value = _uiState.value.copy(
-            isAccessibilityEnabled = isAccessibilityServiceEnabled(getApplication()),
+            isAccessibilityEnabled = isAccessibilityServiceEnabled(context),
             hasNotificationPolicyAccess = checkNotificationPolicyAccess(),
             hasShizukuReady = shizukuManager.shizukuReady,
             shizukuPermission = shizukuManager.shizukuPermission,
@@ -76,11 +83,11 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
     }
 
     private fun checkNotificationPolicyAccess(): Boolean {
-        return (getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).isNotificationPolicyAccessGranted
+        return (context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).isNotificationPolicyAccessGranted
     }
 
     private fun checkOverlayPermission(): Boolean {
-        return Settings.canDrawOverlays(getApplication())
+        return Settings.canDrawOverlays(context)
     }
 
     fun navigateToOnboardingStep(newStep: OnboardingStep) {
@@ -126,7 +133,7 @@ class SetupViewModel(application: Application, private val savedStateHandle: Sav
         viewModelScope.launch {
             try {
                 permissionManager.grantWriteSecureSettingsPermission()
-                permissionManager.enableAccessibilityService(ComponentName(getApplication<Application>().packageName, OverlayService::class.java.name))
+                permissionManager.enableAccessibilityService(ComponentName(context.packageName, OverlayService::class.java.name))
                 permissionManager.grantNotificationPolicyPermission() // Grant Notification Policy Access
                 permissionManager.grantSystemAlertWindowPermission() // Grant Overlay Permission
                 navigateToOnboardingStep(OnboardingStep.Complete) // Navigate to overlay permission step

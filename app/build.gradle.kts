@@ -4,6 +4,8 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.plugin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
@@ -75,10 +77,6 @@ configure<ApplicationExtension> {
     }
 }
 
-kotlin {
-    jvmToolchain(17)
-}
-
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
 
@@ -102,6 +100,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.datastore.preferences)
+
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
 
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)

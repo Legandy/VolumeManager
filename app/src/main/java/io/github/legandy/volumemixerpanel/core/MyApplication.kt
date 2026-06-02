@@ -2,46 +2,23 @@ package io.github.legandy.volumemixerpanel.core
 
 import android.app.Application
 import android.content.Context
-import androidx.datastore.preferences.preferencesDataStore
-import io.github.legandy.volumemixerpanel.app.appSettingsDataStore
-import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
+import dagger.hilt.android.HiltAndroidApp
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.ShizukuProvider
+import javax.inject.Inject
 
-private val Context.appVolumesDataStore by preferencesDataStore(name = "app_volumes")
-private val Context.setupPreferencesDataStore by preferencesDataStore(name = "setup_preferences")
-
+@HiltAndroidApp
 class MyApplication : Application() {
 
-    companion object {
-        private lateinit var instance: MyApplication
+    @Inject
+    lateinit var shizukuManager: ShizukuManager
 
-        val settings: SettingsDataStore by lazy {
-            SettingsDataStore(instance.appSettingsDataStore)
-        }
-
-        val shizukuManager: ShizukuManager by lazy {
-            ShizukuManager(instance.applicationContext)
-        }
-
-        val volumeManager: VolumeManager by lazy {
-            VolumeManager(
-                instance.applicationContext,
-                shizukuManager,
-                instance.appVolumesDataStore
-            )
-        }
-        
-        val permissionManager: PermissionManager by lazy {
-            shizukuManager.permissionManager
-        }
-
-        val setupDataStore by lazy { instance.setupPreferencesDataStore }
-    }
+    @Inject
+    lateinit var volumeManager: VolumeManager
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
+        
         shizukuManager.onShizukuReady = { volumeManager.start() }
         
         // If Shizuku is already ready (sticky listener triggered during lazy init), start manually

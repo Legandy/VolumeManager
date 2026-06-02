@@ -8,24 +8,33 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
-import io.github.legandy.volumemixerpanel.core.MyApplication
 import io.github.legandy.volumemixerpanel.core.ShizukuManager
 import io.github.legandy.volumemixerpanel.core.VolumeManager
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
+import io.github.legandy.volumemixerpanel.settings.ThemeMode
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class SettingsActivity : ComponentActivity() {
 
-    private lateinit var settingsDataStore: SettingsDataStore
-    private val volumeManager: VolumeManager by lazy { MyApplication.volumeManager }
-    private val shizukuManager: ShizukuManager by lazy { MyApplication.shizukuManager }
+    @Inject
+    lateinit var settingsDataStore: SettingsDataStore
+
+    @Inject
+    lateinit var volumeManager: VolumeManager
+
+    @Inject
+    lateinit var shizukuManager: ShizukuManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        settingsDataStore = SettingsDataStore(provideSettingsDataStore(applicationContext))
-
         setContent {
-            VolumeMixerPanelTheme {
+            val themeMode by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+            VolumeMixerPanelTheme(themeMode = themeMode) {
                 SettingsScreen(
                     settingsDataStore = settingsDataStore,
                     volumeManager = volumeManager,
@@ -33,11 +42,5 @@ class SettingsActivity : ComponentActivity() {
                 )
             }
         }
-    }
-
-    private fun provideSettingsDataStore(context: Context): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create(
-            produceFile = { context.preferencesDataStoreFile("settings") }
-        )
     }
 }

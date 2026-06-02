@@ -1,7 +1,5 @@
 package io.github.legandy.volumemixerpanel.app
 
-import android.app.Application
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,32 +12,29 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
-import io.github.legandy.volumemixerpanel.core.MyApplication
+import io.github.legandy.volumemixerpanel.settings.ThemeMode
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import io.github.legandy.volumemixerpanel.setup.SetupViewModel
-import io.github.legandy.volumemixerpanel.setup.SetupViewModelFactory
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class AppSettingsActivity : ComponentActivity() {
 
-    private lateinit var settingsDataStore: SettingsDataStore
+    @Inject
+    lateinit var settingsDataStore: SettingsDataStore
 
-    // Use a ViewModel factory for AppSettingsViewModel
-    private val appSettingsViewModel: AppSettingsViewModel by viewModels { 
-        AppSettingsViewModelFactory(application, settingsDataStore) 
-    }
+    private val appSettingsViewModel: AppSettingsViewModel by viewModels()
 
-    private val setupViewModel: SetupViewModel by viewModels { SetupViewModelFactory() }
+    private val setupViewModel: SetupViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        settingsDataStore = MyApplication.settings // Initialize SettingsDataStore here
-
         setContent {
-            VolumeMixerPanelTheme {
+            val themeMode by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+            VolumeMixerPanelTheme(themeMode = themeMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -59,16 +54,5 @@ class AppSettingsActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-
-class AppSettingsViewModelFactory(private val application: Application, private val settingsDataStore: SettingsDataStore) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(AppSettingsViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return AppSettingsViewModel(application, settingsDataStore) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

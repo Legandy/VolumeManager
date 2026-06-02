@@ -11,13 +11,26 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.net.toUri
-import io.github.legandy.volumemixerpanel.core.MyApplication
+import io.github.legandy.volumemixerpanel.core.PermissionManager
 import io.github.legandy.volumemixerpanel.main.MainActivity
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
+import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
+import io.github.legandy.volumemixerpanel.settings.ThemeMode
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class SetupActivity : ComponentActivity() {
 
-    private val setupViewModel: SetupViewModel by viewModels { SetupViewModelFactory() }
+    private val setupViewModel: SetupViewModel by viewModels()
+
+    @Inject
+    lateinit var permissionManager: PermissionManager
+
+    @Inject
+    lateinit var settingsDataStore: SettingsDataStore
 
     private val overlayPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         // onResume will handle the state update
@@ -29,8 +42,9 @@ class SetupActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val uiState by setupViewModel.uiState.collectAsState()
+            val themeMode by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
 
-            VolumeMixerPanelTheme {
+            VolumeMixerPanelTheme(themeMode = themeMode) {
                 if (!uiState.hasShizukuReady) {
                     WaitingForShizukuScreen()
                 } else {
@@ -49,7 +63,7 @@ class SetupActivity : ComponentActivity() {
                         isAccessibilityEnabled = uiState.isAccessibilityEnabled,
                         hasNotificationPolicyAccess = uiState.hasNotificationPolicyAccess,
                         hasOverlayPermission = uiState.hasOverlayPermission,
-                        onGrantShizukuClick = { MyApplication.permissionManager.requestShizukuPermission(this) },
+                        onGrantShizukuClick = { permissionManager.requestShizukuPermission(this) },
                         onOpenAccessibilityClick = { openAccessibilitySettings() },
                         onOpenNotificationPolicyAccessClick = {
                             setupViewModel.onOpenNotificationPolicyAccessClick()

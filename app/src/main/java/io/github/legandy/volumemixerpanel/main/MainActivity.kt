@@ -13,13 +13,27 @@ import io.github.legandy.volumemixerpanel.overlay.OverlayService
 import io.github.legandy.volumemixerpanel.setup.SetupActivity
 import io.github.legandy.volumemixerpanel.setup.SetupViewModel
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
-import io.github.legandy.volumemixerpanel.setup.SetupViewModelFactory
 import io.github.legandy.volumemixerpanel.settings.SettingsScreen
-import io.github.legandy.volumemixerpanel.core.MyApplication
+import io.github.legandy.volumemixerpanel.core.VolumeManager
+import io.github.legandy.volumemixerpanel.core.ShizukuManager
+import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
+import io.github.legandy.volumemixerpanel.settings.ThemeMode
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val setupViewModel: SetupViewModel by viewModels { SetupViewModelFactory() }
+    private val setupViewModel: SetupViewModel by viewModels()
+
+    @Inject
+    lateinit var settingsDataStore: SettingsDataStore
+
+    @Inject
+    lateinit var shizukuManager: ShizukuManager
+
+    @Inject
+    lateinit var volumeManager: VolumeManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +45,8 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            VolumeMixerPanelTheme {
+            val themeMode by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+            VolumeMixerPanelTheme(themeMode = themeMode) {
                 val uiState by setupViewModel.uiState.collectAsState()
 
                 LaunchedEffect(uiState.isLoaded, uiState.isOnboardingCompleted, uiState.hasShizukuReady, uiState.shizukuPermission, uiState.isAccessibilityEnabled, uiState.hasNotificationPolicyAccess, uiState.hasOverlayPermission) {
@@ -58,14 +73,15 @@ class MainActivity : ComponentActivity() {
                 if (uiState.isLoaded &&
                     uiState.isOnboardingCompleted &&
                     uiState.hasShizukuReady &&
+                    uiState.hasShizukuReady &&
                     uiState.shizukuPermission &&
                     uiState.isAccessibilityEnabled &&
                     uiState.hasNotificationPolicyAccess &&
                     uiState.hasOverlayPermission) {
                     SettingsScreen(
-                        settingsDataStore = MyApplication.settings,
-                        shizukuManager = MyApplication.shizukuManager,
-                        volumeManager = MyApplication.volumeManager
+                        settingsDataStore = settingsDataStore,
+                        shizukuManager = shizukuManager,
+                        volumeManager = volumeManager
                     )
                 }
             }

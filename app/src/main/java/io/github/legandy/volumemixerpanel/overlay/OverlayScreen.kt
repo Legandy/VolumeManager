@@ -46,6 +46,7 @@ import io.github.legandy.volumemixerpanel.core.VolumeManager
 import io.github.legandy.volumemixerpanel.main.MainActivity
 import io.github.legandy.volumemixerpanel.settings.AppFilterMode
 import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
+import io.github.legandy.volumemixerpanel.settings.ThemeMode
 import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
 import kotlinx.coroutines.launch
 
@@ -64,7 +65,9 @@ fun OverlayScreen(
     settingsDataStore: SettingsDataStore,
     bottomPadding: Dp
 ) {
-    VolumeMixerPanelTheme {
+    val themeMode by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+
+    VolumeMixerPanelTheme(themeMode = themeMode) {
         AnimatedVisibility(
             visible = isOverlayVisible,
             enter = slideInVertically(animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessMedium), initialOffsetY = { -it / 2 }) + fadeIn(animationSpec = spring()),

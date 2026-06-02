@@ -27,6 +27,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.legandy.volumemixerpanel.di.AppVolumesDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,12 +39,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.lang.reflect.Method
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @SuppressLint("PrivateApi")
-class VolumeManager(
-    private val context: Context,
+@Singleton
+class VolumeManager @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val shizukuManager: ShizukuManager,
-    private val volumesDataStore: DataStore<Preferences>
+    @AppVolumesDataStore private val volumesDataStore: DataStore<Preferences>
 ) {
     companion object {
         private const val TAG = "VolumeMixerPanel.VolumeManager"

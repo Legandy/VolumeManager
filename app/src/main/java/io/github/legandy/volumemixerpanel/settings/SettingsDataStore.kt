@@ -3,16 +3,22 @@ package io.github.legandy.volumemixerpanel.settings
 import android.media.AudioManager
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
+import io.github.legandy.volumemixerpanel.di.AppSettingsDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.json.JSONObject
+import javax.inject.Inject
+import javax.inject.Singleton
 
 enum class ThemeMode { LIGHT, DARK, SYSTEM }
 enum class AppFilterMode { SHOW_ALL, BLACKLIST, WHITELIST }
 
-class SettingsDataStore(private val ds: DataStore<Preferences>) {
+@Singleton
+class SettingsDataStore @Inject constructor(
+    @AppSettingsDataStore private val ds: DataStore<Preferences>
+) {
 
     private object Keys {
         val SHOW_OVERLAY_ON_VOLUME = booleanPreferencesKey("show_overlay_on_volume")

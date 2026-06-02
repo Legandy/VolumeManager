@@ -12,47 +12,53 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.view.WindowInsets
 import android.view.accessibility.AccessibilityEvent
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import io.github.legandy.volumemixerpanel.core.MyApplication
+import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
+import io.github.legandy.volumemixerpanel.actions.ACTION_HIDE_OVERLAY
+import io.github.legandy.volumemixerpanel.actions.ACTION_SHOW_OVERLAY
+import io.github.legandy.volumemixerpanel.actions.ACTION_TOGGLE_OVERLAY
 import io.github.legandy.volumemixerpanel.core.VolumeManager
 import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import io.github.legandy.volumemixerpanel.actions.ACTION_SHOW_OVERLAY
-import io.github.legandy.volumemixerpanel.actions.ACTION_HIDE_OVERLAY
-import io.github.legandy.volumemixerpanel.actions.ACTION_TOGGLE_OVERLAY
-import android.view.WindowInsets
-import androidx.compose.ui.unit.dp
+import io.github.legandy.volumemixerpanel.settings.ThemeMode
+import io.github.legandy.volumemixerpanel.ui.theme.VolumeMixerPanelTheme
+import kotlinx.coroutines.*
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class OverlayService : AccessibilityService() {
+
     companion object {
         private const val TAG = "VolumeMixerPanel.Service"
     }
 
     private val windowManager: WindowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
-    private val audioManager: AudioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
     private val keyguardManager: KeyguardManager by lazy { getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
 
-    private val volumeManager: VolumeManager by lazy { MyApplication.volumeManager }
-    private val settingsDataStore: SettingsDataStore by lazy { MyApplication.settings }
+    @Inject
+    lateinit var audioManager: AudioManager
+
+    @Inject
+    lateinit var volumeManager: VolumeManager
+
+    @Inject
+    lateinit var settingsDataStore: SettingsDataStore
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isOverlayVisible by mutableStateOf(false)
     private var view: View? = null
@@ -182,19 +188,33 @@ class OverlayService : AccessibilityService() {
         }
 
         setContent {
-            val overlayViewModel: OverlayViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = OverlayViewModelFactory(application))
-            OverlayScreen(
-                overlayViewModel = overlayViewModel,
-                isOverlayVisible = isOverlayVisible,
-                onOverlayHidden = ::onOverlayHidden,
-                hideView = ::hideView,
-                resetTimer = ::resetIdleTimer,
-                pauseTimer = ::pauseIdleTimer,
-                resumeTimer = ::resumeIdleTimer,
-                volumeManager = volumeManager,
-                settingsDataStore = settingsDataStore,
-                bottomPadding = navBarHeight
-            )
+            val themeMode by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+            VolumeMixerPanelTheme(themeMode = themeMode) {
+                val overlayViewModel: OverlayViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                            return OverlayViewModel(
+                                audioManager = audioManager,
+                                volumeManager = volumeManager,
+                                settingsDataStore = settingsDataStore
+                            ) as T
+                        }
+                    }
+                )
+
+                OverlayScreen(
+                    overlayViewModel = overlayViewModel,
+                    isOverlayVisible = isOverlayVisible,
+                    onOverlayHidden = ::onOverlayHidden,
+                    hideView = ::hideView,
+                    resetTimer = ::resetIdleTimer,
+                    pauseTimer = ::pauseIdleTimer,
+                    resumeTimer = ::resumeIdleTimer,
+                    volumeManager = volumeManager,
+                    settingsDataStore = settingsDataStore,
+                    bottomPadding = navBarHeight
+                )
+            }
         }
     }
 

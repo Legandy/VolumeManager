@@ -1,16 +1,16 @@
 package io.github.legandy.volumemixerpanel.overlay
 
-import android.app.Application
-import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import androidx.compose.runtime.snapshotFlow
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.legandy.volumemixerpanel.core.MyApplication
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.legandy.volumemixerpanel.core.VolumeManager
 import io.github.legandy.volumemixerpanel.settings.AppFilterMode
+import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
 import kotlinx.coroutines.flow.*
+import javax.inject.Inject
 
 data class SystemAudioUiState(
     val volumes: Map<Int, Int> = emptyMap(),
@@ -22,11 +22,12 @@ data class SystemAudioUiState(
     val activeApps: List<VolumeManager.AppState> = emptyList()
 )
 
-class OverlayViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val audioManager = application.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val volumeManager: VolumeManager = MyApplication.volumeManager
-    private val settingsDataStore = MyApplication.settings
+@HiltViewModel
+class OverlayViewModel @Inject constructor(
+    private val audioManager: AudioManager,
+    private val volumeManager: VolumeManager,
+    private val settingsDataStore: SettingsDataStore
+) : ViewModel() {
 
     private val appsFlow = snapshotFlow { volumeManager.apps.values.toList() }
 

@@ -1,17 +1,17 @@
 package io.github.legandy.volumemixerpanel.settings
 
-import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import io.github.legandy.volumemixerpanel.core.MyApplication
+import javax.inject.Inject
 
 data class AppFilterUiState(
     val isLoading: Boolean = true,
@@ -19,9 +19,11 @@ data class AppFilterUiState(
     val allApps: List<InstalledAppData> = emptyList()
 )
 
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-    private val settingsDataStore = MyApplication.settings
-    private val packageManager = application.packageManager
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val settingsDataStore: SettingsDataStore,
+    private val packageManager: PackageManager
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppFilterUiState())
     val uiState: StateFlow<AppFilterUiState> = _uiState.asStateFlow()

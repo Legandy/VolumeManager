@@ -5,12 +5,18 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import io.github.legandy.volumemixerpanel.overlay.OverlayService
-import io.github.legandy.volumemixerpanel.core.MyApplication
+import io.github.legandy.volumemixerpanel.core.VolumeManager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class ActionReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "ActionReceiver"
     }
+
+    @Inject
+    lateinit var volumeManager: VolumeManager
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
@@ -19,7 +25,7 @@ class ActionReceiver : BroadcastReceiver() {
         when (action) {
             ACTION_TOGGLE_SILENT -> {
                 Log.d(TAG, "Handling ACTION_TOGGLE_SILENT")
-                MyApplication.volumeManager.setSilent()
+                volumeManager.setSilent()
             }
             else -> {
                 val serviceIntent = Intent(context, OverlayService::class.java).apply {

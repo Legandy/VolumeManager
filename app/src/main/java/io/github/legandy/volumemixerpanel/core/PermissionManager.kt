@@ -8,12 +8,16 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.Settings
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import org.joor.Reflect
 import rikka.shizuku.Shizuku
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class PermissionManager(
-    private val context: Context,
-    private val shizukuNotificationManagerProvider: () -> Reflect?
+@Singleton
+class PermissionManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val shizukuManager: ShizukuManager
 ) {
     companion object {
         private const val TAG = "VolumeMixerPanel.PermMgr"
@@ -89,7 +93,7 @@ class PermissionManager(
             return true
         }
 
-        val shizukuNotificationManager = shizukuNotificationManagerProvider()
+        val shizukuNotificationManager = shizukuManager.shizukuNotificationManager
         if (shizukuNotificationManager == null) {
             Log.e(TAG, "Shizuku Notification Manager not initialized. Cannot grant permission.")
             return false

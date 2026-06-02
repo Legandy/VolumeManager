@@ -1,16 +1,20 @@
 package io.github.legandy.volumemixerpanel.app
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.legandy.volumemixerpanel.settings.SettingsDataStore
 import io.github.legandy.volumemixerpanel.settings.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class AppSettingsViewModel(application: Application, private val settingsDataStore: SettingsDataStore) : AndroidViewModel(application) {
+@HiltViewModel
+class AppSettingsViewModel @Inject constructor(
+    private val settingsDataStore: SettingsDataStore
+) : ViewModel() {
 
     // UI State
     private val _uiState = MutableStateFlow(AppSettingsUiState())
